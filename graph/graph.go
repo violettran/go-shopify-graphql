@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	shopifyBaseDomain        = "myshopify.com"
-	shopifyAccessTokenHeader = "X-Shopify-Access-Token"
+	shopifyBaseDomain                  = "myshopify.com"
+	shopifyAccessTokenHeader           = "X-Shopify-Access-Token"
+	shopifyStoreFrontAccessTokenHeader = "X-Shopify-Storefront-Access-Token"
 )
 
 var (
@@ -32,10 +33,26 @@ func WithVersion(apiVersion string) Option {
 	}
 }
 
+func WithStoreFrontVersion(apiVersion string) Option {
+	return func(t *transport) {
+		if apiVersion != "" {
+			apiPathPrefix = fmt.Sprintf("api/%s", apiVersion)
+		} else {
+			apiPathPrefix = "api"
+		}
+	}
+}
+
 // WithToken optionally sets oauth token
 func WithToken(token string) Option {
 	return func(t *transport) {
 		t.accessToken = token
+	}
+}
+
+func WithStoreFrontToken(token string) Option {
+	return func(t *transport) {
+		t.storeFrontAccessToken = token
 	}
 }
 
@@ -48,9 +65,10 @@ func WithPrivateAppAuth(apiKey string, password string) Option {
 }
 
 type transport struct {
-	accessToken string
-	apiKey      string
-	password    string
+	accessToken           string
+	storeFrontAccessToken string
+	apiKey                string
+	password              string
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -58,6 +76,8 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Header.Set(shopifyAccessTokenHeader, t.accessToken)
 	} else if t.apiKey != "" && t.password != "" {
 		req.SetBasicAuth(t.apiKey, t.password)
+	} else if t.storeFrontAccessToken != "" {
+		req.Header.Set(shopifyStoreFrontAccessTokenHeader, t.storeFrontAccessToken)
 	}
 
 	return http.DefaultTransport.RoundTrip(req)
