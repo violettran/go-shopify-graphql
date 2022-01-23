@@ -7,8 +7,8 @@ import (
 )
 
 type CartService interface {
-	Get(id graphql.ID) (*Cart, error)
-	Create(cartInput *CartInput) (graphql.ID, error)
+	Get(id graphql.String) (*Cart, error)
+	Create(cartInput *CartInput) (graphql.String, error)
 	CartLinesUpdate(id graphql.ID, cartLinesUpdateInput []CartLineUpdateInput) error
 	CartLinesAdd(id graphql.ID, lines []CartLineInput) error
 	CartLinesRemove(id graphql.ID, lineIds []graphql.ID) error
@@ -121,7 +121,7 @@ const cartBaseQuery = `
     note
 `
 
-func (c CartServiceOp) Get(id graphql.ID) (*Cart, error) {
+func (c CartServiceOp) Get(id graphql.String) (*Cart, error) {
 	q := fmt.Sprintf(`
 		query cart($id: ID!) {
 			cart(id: $id){
@@ -149,7 +149,7 @@ func (c CartServiceOp) Get(id graphql.ID) (*Cart, error) {
 
 type CartResult struct {
 	Cart struct {
-		ID graphql.ID `json:"id,omitempty"`
+		ID graphql.String `json:"id,omitempty"`
 	}
 	UserErrors []UserErrors `json:"userErrors"`
 }
@@ -158,7 +158,7 @@ type MutationCartCreate struct {
 	CartResult CartResult `graphql:"cartCreate(input: $cartInput)" json:"cartCreate"`
 }
 
-func (c CartServiceOp) Create(cartInput *CartInput) (graphql.ID, error) {
+func (c CartServiceOp) Create(cartInput *CartInput) (graphql.String, error) {
 	m := MutationCartCreate{}
 
 	vars := map[string]interface{}{
@@ -166,22 +166,22 @@ func (c CartServiceOp) Create(cartInput *CartInput) (graphql.ID, error) {
 	}
 	err := c.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if len(m.CartResult.UserErrors) > 0 {
-		return nil, fmt.Errorf("%+v", m.CartResult.UserErrors)
+		return "", fmt.Errorf("%+v", m.CartResult.UserErrors)
 	}
 	id := m.CartResult.Cart.ID
 	return id, nil
 }
 
 type CartLineUpdateInput struct {
-	Attributes    []Attribute `json:"attributes,omitempty"`
-	ID            graphql.ID  `json:"id,omitempty"`
-	MerchandiseId graphql.ID  `json:"merchandiseId,omitempty"`
-	Quantity      graphql.Int `json:"quantity,omitempty"`
-	SellingPlanId graphql.ID  `json:"sellingPlanId,omitempty"`
+	Attributes    []Attribute    `json:"attributes,omitempty"`
+	ID            graphql.String `json:"id,omitempty"`
+	MerchandiseId graphql.String `json:"merchandiseId,omitempty"`
+	Quantity      graphql.Int    `json:"quantity,omitempty"`
+	SellingPlanId graphql.String `json:"sellingPlanId,omitempty"`
 }
 
 type mutationCartLinesUpdate struct {
@@ -281,7 +281,7 @@ type Cart struct {
 	CreatedAt     DateTime           `json:"createdAt,omitempty"`
 	DiscountCodes []CartDiscountCode `json:"discountCodes,omitempty"`
 	EstimatedCost CartEstimatedCost  `json:"estimatedCost,omitempty"`
-	ID            graphql.ID         `json:"id,omitempty"`
+	ID            graphql.String     `json:"id,omitempty"`
 	Lines         struct {
 		Edges []struct {
 			Node   CartLine       `json:"node,omitempty"`
@@ -297,7 +297,7 @@ type CartLine struct {
 	Attributes            []Attribute              `json:"attributes,omitempty"`
 	DiscountAllocations   []CartDiscountAllocation `json:"discountAllocations,omitempty"`
 	EstimatedCost         CartLineEstimatedCost    `json:"estimatedCost,omitempty"`
-	ID                    graphql.ID               `json:"id,omitempty"`
+	ID                    graphql.String           `json:"id,omitempty"`
 	Merchandise           Merchandise              `json:"merchandise,omitempty"`
 	Quantity              graphql.Int              `json:"quantity,omitempty"`
 	SellingPlanAllocation SellingPlanAllocation    `json:"sellingPlanAllocation,omitempty"`
@@ -330,7 +330,7 @@ type SellingPlanAllocationPriceAdjustment struct {
 
 type SellingPlan struct {
 	Description         graphql.String               `json:"description,omitempty"`
-	ID                  graphql.ID                   `json:"id,omitempty"`
+	ID                  graphql.String               `json:"id,omitempty"`
 	Name                graphql.String               `json:"name,omitempty"`
 	Options             []SellingPlanOption          `json:"options,omitempty"`
 	PriceAdjustments    []SellingPlanPriceAdjustment `json:"priceAdjustments,omitempty"`
@@ -387,10 +387,10 @@ type CartBuyerIdentityInput struct {
 }
 
 type CartLineInput struct {
-	Attributes    []Attribute `json:"attributes,omitempty"`
-	MerchandiseId graphql.ID  `json:"merchandiseId,omitempty"`
-	Quantity      graphql.Int `json:"quantity,omitempty"`
-	SellingPlanId graphql.ID  `json:"sellingPlanId,omitempty"`
+	Attributes    []Attribute    `json:"attributes,omitempty"`
+	MerchandiseId graphql.String `json:"merchandiseId,omitempty"`
+	Quantity      graphql.Int    `json:"quantity,omitempty"`
+	SellingPlanId graphql.String `json:"sellingPlanId,omitempty"`
 }
 
 type CartCustomer struct {
@@ -407,7 +407,7 @@ type CartCustomer struct {
 	DisplayName            graphql.String `json:"displayName,omitempty"`
 	Email                  graphql.String `json:"email,omitempty"`
 	FirstName              graphql.String `json:"firstName,omitempty"`
-	ID                     graphql.ID     `json:"id,omitempty"`
+	ID                     graphql.String `json:"id,omitempty"`
 	LastIncompleteCheckout Checkout       `json:"lastIncompleteCheckout,omitempty"`
 	LastName               graphql.String `json:"lastName,omitempty"`
 	Orders                 struct {
@@ -431,7 +431,7 @@ type Checkout struct {
 	CurrencyCode                CurrencyCode           `json:"currencyCode,omitempty"`
 	CustomAttributes            []Attribute            `json:"customAttributes,omitempty"`
 	Email                       graphql.String         `json:"email,omitempty"`
-	ID                          graphql.ID             `json:"id,omitempty"`
+	ID                          graphql.String         `json:"id,omitempty"`
 	LineItemsSubtotalPrice      MoneyV2                `json:"lineItemsSubtotalPrice,omitempty"`
 	Note                        graphql.String         `json:"note,omitempty"`
 	Order                       Order                  `json:"order,omitempty"`
@@ -458,7 +458,7 @@ type DiscountAllocation struct {
 type AppliedGiftCard struct {
 	AmountUsedV2          MoneyV2        `json:"amountUsedV2,omitempty"`
 	BalanceV2             MoneyV2        `json:"balanceV2,omitempty"`
-	ID                    graphql.ID     `json:"id,omitempty"`
+	ID                    graphql.String `json:"id,omitempty"`
 	LastCharacters        graphql.String `json:"lastCharacters,omitempty"`
 	PresentmentAmountUsed MoneyV2        `json:"presentmentAmountUsed,omitempty"`
 }
