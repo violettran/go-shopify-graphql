@@ -177,6 +177,7 @@ type QueryRoot struct {
 	// ProductSavedSearches *SavedSearchConnection `json:"productSavedSearches,omitempty"`
 	// Returns a ProductVariant resource by ID.
 	ProductVariant *ProductVariant `json:"productVariant,omitempty"`
+	ProductImage   *ProductImage   `json:"productImage,omitempty"`
 	// List of the product variants.
 	// ProductVariants *ProductVariantConnection `json:"productVariants,omitempty"`
 	// List of products.

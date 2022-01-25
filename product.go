@@ -65,6 +65,15 @@ type ProductBulkResult struct {
 	Metafields      []Metafield      `json:"metafields,omitempty"`
 	ProductVariants []ProductVariant `json:"variants,omitempty"`
 	Collections     []Collection     `json:"collections,omitempty"`
+	ProductImages   []ProductImage   `json:"images,omitempty"`
+}
+
+type ProductImage struct {
+	AltText graphql.String `json:"altText,omitempty"`
+	ID      graphql.ID     `json:"id,omitempty"`
+	Src     graphql.String `json:"src,omitempty"`
+	Height  graphql.Int    `json:"height,omitempty"`
+	Width   graphql.Int    `json:"width,omitempty"`
 }
 
 // SEO information.
@@ -477,6 +486,17 @@ var productBulkQuery = fmt.Sprintf(`
       }
     }
   }
+    images {
+        edges {
+            node {
+                altText
+                height
+                id
+                src
+                width
+            }
+        }
+    }
 	variants{
 		edges{
 			node{
@@ -487,6 +507,13 @@ var productBulkQuery = fmt.Sprintf(`
 					name
 					value
 				}
+                image {
+                    altText
+                    height
+                    id
+                    src
+                    width
+                }
 				compareAtPrice
 				price
 				inventoryQuantity
