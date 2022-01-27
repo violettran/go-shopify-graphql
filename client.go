@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	shopifyAPIVersion = "2021-01"
+	shopifyAPIVersion           = "2021-01"
+	shopifyStoreFrontAPIVersion = "2022-01"
 )
 
 type Client struct {
@@ -20,6 +21,7 @@ type Client struct {
 	Variant       VariantService
 	Inventory     InventoryService
 	Collection    CollectionService
+	Cart          CartService
 	Order         OrderService
 	Fulfillment   FulfillmentService
 	Location      LocationService
@@ -56,6 +58,7 @@ func NewClient(apiKey string, password string, storeName string) *Client {
 	c.Product = &ProductServiceOp{client: c}
 	c.Variant = &VariantServiceOp{client: c}
 	c.Inventory = &InventoryServiceOp{client: c}
+	c.Cart = &CartServiceOp{client: c}
 	c.Collection = &CollectionServiceOp{client: c}
 	c.Order = &OrderServiceOp{client: c}
 	c.Fulfillment = &FulfillmentServiceOp{client: c}
@@ -85,6 +88,7 @@ func NewClientWithToken(apiKey string, storeName string) *Client {
 	c.Product = &ProductServiceOp{client: c}
 	c.Variant = &VariantServiceOp{client: c}
 	// c.Inventory = &InventoryServiceOp{client: c}
+	c.Cart = &CartServiceOp{client: c}
 	c.Collection = &CollectionServiceOp{client: c}
 	// c.Order = &OrderServiceOp{client: c}
 	// c.Fulfillment = &FulfillmentServiceOp{client: c}
@@ -96,10 +100,25 @@ func NewClientWithToken(apiKey string, storeName string) *Client {
 	return c
 }
 
+func NewClientStoreFrontWithToken(apiKey string, storeName string) *Client {
+	c := &Client{gql: newShopifyStoreFrontGraphQLClientWithToken(apiKey, storeName)}
+	c.Cart = &CartServiceOp{client: c}
+	return c
+}
+
 func newShopifyGraphQLClientWithToken(token string, storeName string) *graphql.Client {
 	opts := []graphqlclient.Option{
 		graphqlclient.WithVersion(shopifyAPIVersion),
 		graphqlclient.WithToken(token),
+	}
+	// todo no more fixed storeName
+	return graphqlclient.NewClient(storeName, opts...)
+}
+
+func newShopifyStoreFrontGraphQLClientWithToken(token string, storeName string) *graphql.Client {
+	opts := []graphqlclient.Option{
+		graphqlclient.WithStoreFrontVersion(shopifyStoreFrontAPIVersion),
+		graphqlclient.WithStoreFrontToken(token),
 	}
 	// todo no more fixed storeName
 	return graphqlclient.NewClient(storeName, opts...)

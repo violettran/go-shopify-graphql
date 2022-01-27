@@ -16,21 +16,24 @@ type VariantServiceOp struct {
 }
 
 type ProductVariant struct {
-	ID                graphql.ID                    `json:"id,omitempty"`
-	LegacyResourceID  graphql.String                `json:"legacyResourceId,omitempty"`
-	SKU               graphql.String                `json:"sku,omitempty"`
-	SelectedOptions   []SelectedOption              `json:"selectedOptions,omitempty"`
-	CompareAtPrice    Money                         `json:"compareAtPrice,omitempty"`
-	Price             Money                         `json:"price,omitempty"`
-	InventoryQuantity graphql.Int                   `json:"inventoryQuantity,omitempty"`
-	InventoryItem     InventoryItem                 `json:"inventoryItem,omitempty"`
-	Barcode           graphql.String                `json:"barcode,omitempty"`
-	Title             graphql.String                `json:"title,omitempty"`
-	InventoryPolicy   ProductVariantInventoryPolicy `json:"inventoryPolicy,omitempty"`
-	Weight            graphql.Float                 `json:"weight,omitempty"`
-	WeightUnit        WeightUnit                    `json:"weightUnit,omitempty"`
-	Product           *ProductBulkResult            `json:"product,omitempty"`
-	Image             ProductImage                  `json:"image,omitempty"`
+	ID                  graphql.ID                    `json:"id,omitempty"`
+	LegacyResourceID    graphql.String                `json:"legacyResourceId,omitempty"`
+	SKU                 graphql.String                `json:"sku,omitempty"`
+	SelectedOptions     []SelectedOption              `json:"selectedOptions,omitempty"`
+	CompareAtPrice      Money                         `json:"compareAtPrice,omitempty"`
+	Price               Money                         `json:"price,omitempty"`
+	InventoryQuantity   graphql.Int                   `json:"inventoryQuantity,omitempty"`
+	InventoryItem       InventoryItem                 `json:"inventoryItem,omitempty"`
+	Barcode             graphql.String                `json:"barcode,omitempty"`
+	Title               graphql.String                `json:"title,omitempty"`
+	InventoryPolicy     ProductVariantInventoryPolicy `json:"inventoryPolicy,omitempty"`
+	Weight              graphql.Float                 `json:"weight,omitempty"`
+	WeightUnit          WeightUnit                    `json:"weightUnit,omitempty"`
+	Product             *ProductBulkResult            `json:"product,omitempty"`
+	Image               ProductImage                  `json:"image,omitempty"`
+	AvailableForSale    graphql.Boolean               `json:"availableForSale,omitempty"`
+	CompareAtPriceV2    MoneyV2                       `json:"compareAtPriceV2,omitempty"`
+	CurrentlyNotInStock graphql.Boolean               `json:"currentlyNotInStock,omitempty"`
 }
 
 type SelectedOption struct {
