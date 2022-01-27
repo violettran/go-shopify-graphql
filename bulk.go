@@ -462,6 +462,8 @@ func concludeObjectType(gid string) (reflect.Type, string, error) {
 		return reflect.TypeOf(ProductVariant{}), fmt.Sprintf("%ss", resource), nil
 	case "Collection":
 		return reflect.TypeOf(Collection{}), fmt.Sprintf("%ss", resource), nil
+	case "ProductImage":
+		return reflect.TypeOf(ProductImage{}), fmt.Sprintf("%ss", resource), nil
 	default:
 		return reflect.TypeOf(nil), "", fmt.Errorf("`%s` not implemented type", resource)
 	}

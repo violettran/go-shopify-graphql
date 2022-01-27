@@ -30,6 +30,7 @@ type ProductVariant struct {
 	Weight            graphql.Float                 `json:"weight,omitempty"`
 	WeightUnit        WeightUnit                    `json:"weightUnit,omitempty"`
 	Product           *ProductBulkResult            `json:"product,omitempty"`
+	Image             ProductImage                  `json:"image,omitempty"`
 }
 
 type SelectedOption struct {
