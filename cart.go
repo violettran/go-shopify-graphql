@@ -13,6 +13,7 @@ type CartService interface {
 	CartLinesAdd(id graphql.ID, lines []CartLineInput) error
 	CartLinesRemove(id graphql.ID, lineIds []graphql.ID) error
 	CartNoteUpdate(id graphql.ID, note graphql.String) error
+	CartDiscountCodesUpdate(id graphql.ID, discountCodes []graphql.String) error
 }
 
 type CartServiceOp struct {
@@ -91,8 +92,6 @@ const cartBaseQuery = `
                 merchandise {
                     ... on ProductVariant {
                         id
-                        title
-                        
                     }
                 }
                 sellingPlanAllocation {
@@ -270,6 +269,28 @@ func (c CartServiceOp) CartNoteUpdate(id graphql.ID, note graphql.String) error 
 
 	if len(m.CartNoteUpdateResult.UserErrors) > 0 {
 		return fmt.Errorf("%+v", m.CartNoteUpdateResult.UserErrors)
+	}
+	return nil
+}
+
+type mutationCartDiscountCodesUpdate struct {
+	CartDiscountCodesUpdateResult CartResult `graphql:"cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes)" json:"cartDiscountCodesUpdate"`
+}
+
+func (c CartServiceOp) CartDiscountCodesUpdate(id graphql.ID, discountCodes []graphql.String) error {
+	m := mutationCartDiscountCodesUpdate{}
+
+	vars := map[string]interface{}{
+		"cartId":        id,
+		"discountCodes": discountCodes,
+	}
+	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	if err != nil {
+		return err
+	}
+
+	if len(m.CartDiscountCodesUpdateResult.UserErrors) > 0 {
+		return fmt.Errorf("%+v", m.CartDiscountCodesUpdateResult.UserErrors)
 	}
 	return nil
 }
