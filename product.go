@@ -483,6 +483,13 @@ var productBulkQuery = fmt.Sprintf(`
           description
           title
         }
+		image {
+			altText
+			height
+			id
+			src
+			width
+    	}
       }
     }
   }

@@ -29,14 +29,24 @@ type CollectionServiceOp struct {
 type Collection struct {
 	CollectionBase
 }
+
+type CollectionImage struct {
+	AltText graphql.String `json:"altText,omitempty"`
+	ID      graphql.ID     `json:"id,omitempty"`
+	Src     graphql.String `json:"src,omitempty"`
+	Height  graphql.Int    `json:"height,omitempty"`
+	Width   graphql.Int    `json:"width,omitempty"`
+}
+
 type CollectionBase struct {
-	ID             graphql.ID     `json:"id,omitempty"`
-	Handle         graphql.String `json:"handle,omitempty"`
-	Title          graphql.String `json:"title,omitempty"`
-	Description    graphql.String `json:"description,omitempty"`
-	ProductsCount  graphql.Int    `json:"productsCount,omitempty"`
-	TemplateSuffix graphql.String `json:"templateSuffix,omitempty"`
-	Seo            Seo            `json:"seo,omitempty"`
+	ID             graphql.ID      `json:"id,omitempty"`
+	Handle         graphql.String  `json:"handle,omitempty"`
+	Title          graphql.String  `json:"title,omitempty"`
+	Description    graphql.String  `json:"description,omitempty"`
+	ProductsCount  graphql.Int     `json:"productsCount,omitempty"`
+	TemplateSuffix graphql.String  `json:"templateSuffix,omitempty"`
+	Seo            Seo             `json:"seo,omitempty"`
+	Image          CollectionImage `json:"image,omitempty"`
 }
 
 type CollectionBulkResult struct {
