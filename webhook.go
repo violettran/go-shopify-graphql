@@ -220,7 +220,6 @@ func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscript
 
     var op []*WebhookSubscription
     var out QueryRoot
-    fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     err = w.client.gql.QueryString(context.Background(), query, vars, &out)
     fmt.Println(op)
     if err != nil {
