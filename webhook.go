@@ -12,12 +12,21 @@ import (
 
 type WebhookService interface {
     NewWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload)
+    NewEventBridgeWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload)
+
     GetAllWebhookSubcription() (output []*WebhookSubscription, err error)
     DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error)
 }
 
 type WebhookServiceOp struct {
     client *Client
+}
+
+type EventBridgeWebhookSubscriptionCreatePayload struct {
+    // The list of errors that occurred from executing the mutation.
+    UserErrors []UserErrors `json:"userErrors,omitempty"`
+    // The webhook subscription that was created.
+    WebhookSubscription WebhookSubscription `json:"webhookSubscription,omitempty"`
 }
 
 type WebhookSubscriptionCreatePayload struct {
@@ -117,6 +126,17 @@ type WebhookSubscriptionInput struct {
     MetafieldNamespaces []string `json:"metafieldNamespaces,omitempty"`
 }
 
+type EventBridgeWebhookSubscriptionInput struct {
+    // ARN where the event webhook subscription should send the POST request when the event occurs.
+    ARN graphql.String `json:"arn,omitempty"`
+    // The format in which the webhook subscription should send the data.
+    Format WebhookSubscriptionFormat `json:"format,omitempty"`
+    // The list of fields to be included in the webhook subscription.
+    IncludeFields []string `json:"includeFields,omitempty"`
+    // The list of namespaces for any metafields that should be included in the webhook subscription.
+    MetafieldNamespaces []string `json:"metafieldNamespaces,omitempty"`
+}
+
 type mutationWebhookCreate struct {
     WebhookCreateResult WebhookSubscriptionCreatePayload `graphql:"webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"webhookSubscriptionCreate"`
 }
@@ -125,12 +145,17 @@ type mutationWebhookDelete struct {
     WebhookDeleteResult WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionCreate"`
 }
 
+type mutationEventBridgeWebhookCreate struct {
+    EventBridgeWebhookCreateResult EventBridgeWebhookSubscriptionCreatePayload `graphql:"eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"eventBridgeWebhookSubscriptionCreate"`
+}
+
 type WebhookTopic struct {
     WebhookSubscriptionTopic WebhookSubscriptionTopic
 }
 
 type WebhookTopicSubscription struct {
-    WebhookSubscriptionInput WebhookSubscriptionInput
+    WebhookSubscriptionInput            WebhookSubscriptionInput
+    EventBridgeWebhookSubscriptionInput EventBridgeWebhookSubscriptionInput
 }
 
 func (w WebhookServiceOp) NewWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload) {
@@ -141,8 +166,6 @@ func (w WebhookServiceOp) NewWebhookSubcription(topic WebhookTopic, input Webhoo
     }
     err := w.client.gql.Mutate(context.Background(), &m, vars)
     if err != nil {
-        logrus.Info("nani")
-        logrus.Info(err)
         return m.WebhookCreateResult
     }
 
@@ -155,6 +178,28 @@ func (w WebhookServiceOp) NewWebhookSubcription(topic WebhookTopic, input Webhoo
     return m.WebhookCreateResult
 }
 
+func (w WebhookServiceOp) NewEventBridgeWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload) {
+    m := mutationEventBridgeWebhookCreate{}
+    vars := map[string]interface{}{
+        "topic":               topic.WebhookSubscriptionTopic,
+        "webhookSubscription": input.EventBridgeWebhookSubscriptionInput,
+    }
+
+    err := w.client.gql.Mutate(context.Background(), &m, vars)
+    if err != nil {
+        logrus.Info(err)
+        return m.EventBridgeWebhookCreateResult
+    }
+
+    if len(m.EventBridgeWebhookCreateResult.UserErrors) > 0 {
+        err = fmt.Errorf("%+v", m.EventBridgeWebhookCreateResult.UserErrors)
+        logrus.Info(err)
+        return m.EventBridgeWebhookCreateResult
+    }
+
+    return m.EventBridgeWebhookCreateResult
+}
+
 func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error) {
     m := mutationWebhookDelete{}
     logrus.Info(webhookID)
@@ -163,7 +208,6 @@ func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscri
     }
     err = w.client.gql.Mutate(context.Background(), &m, vars)
     if err != nil {
-        logrus.Info("nani")
         logrus.Info(err)
         return m.WebhookDeleteResult, err
     }
@@ -202,17 +246,6 @@ func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscript
     }
   }
   `)
-    // q := fmt.Sprintf(`
-    // 	{
-    // 		products (first: 10, reverse: true) {
-    // 			edges{
-    // 				node{
-    // 					%s
-    // 				}
-    // 			}
-    // 		}
-    // 	}
-    // `, productBaseQuery)
 
     vars := map[string]interface{}{
         // "first": 10,
@@ -221,7 +254,6 @@ func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscript
     var op []*WebhookSubscription
     var out QueryRoot
     err = w.client.gql.QueryString(context.Background(), query, vars, &out)
-    fmt.Println(op)
     if err != nil {
         return output, err
     }
