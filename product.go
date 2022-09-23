@@ -344,6 +344,7 @@ var singleProductQueryVariant = fmt.Sprintf(`
         barcode
         title
         inventoryPolicy
+        inventoryManagement
         weightUnit
         weight
       }
@@ -380,6 +381,7 @@ var singleProductQueryVariantWithCursor = fmt.Sprintf(`
         barcode
         title
         inventoryPolicy
+        inventoryManagement
         weightUnit
         weight
       }
@@ -440,6 +442,7 @@ var productQuery = fmt.Sprintf(`
         barcode
         title
         inventoryPolicy
+        inventoryManagement
         weightUnit
         weight
 			}
@@ -547,6 +550,7 @@ var productBulkQuery = fmt.Sprintf(`
         barcode
         title
         inventoryPolicy
+        inventoryManagement
         weightUnit
         weight
 			}
