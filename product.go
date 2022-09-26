@@ -226,7 +226,7 @@ type MetafieldInput struct {
     Namespace graphql.String     `json:"namespace,omitempty"`
     Key       graphql.String     `json:"key,omitempty"`
     Value     graphql.String     `json:"value,omitempty"`
-    ValueType MetafieldValueType `json:"valueType,omitempty"`
+    Type      MetafieldValueType `json:"type,omitempty"`
 }
 
 // MetafieldValueType enum
@@ -480,7 +480,7 @@ var productBulkQuery = fmt.Sprintf(`
 				namespace
 				key
 				value
-				valueType
+				type
 			}
 		}
 	}

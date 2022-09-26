@@ -1,68 +1,68 @@
 package shopify
 
 import (
-	"context"
-	"fmt"
-	"strings"
+    "context"
+    "fmt"
+    "strings"
 
-	"github.com/es-hs/go-shopify-graphql/graphql"
+    "github.com/es-hs/go-shopify-graphql/graphql"
 
-	log "github.com/sirupsen/logrus"
+    log "github.com/sirupsen/logrus"
 )
 
 type MetafieldService interface {
-	ListAllShopMetafields() ([]*Metafield, error)
-	ListShopMetafieldsByNamespace(namespace string) ([]*Metafield, error)
+    ListAllShopMetafields() ([]*Metafield, error)
+    ListShopMetafieldsByNamespace(namespace string) ([]*Metafield, error)
 
-	GetShopMetafieldByKey(namespace, key string) (Metafield, error)
+    GetShopMetafieldByKey(namespace, key string) (Metafield, error)
 
-	Delete(metafield MetafieldDeleteInput) error
-	DeleteBulk(metafield []MetafieldDeleteInput) error
+    Delete(metafield MetafieldDeleteInput) error
+    DeleteBulk(metafield []MetafieldDeleteInput) error
 }
 
 type MetafieldServiceOp struct {
-	client *Client
+    client *Client
 }
 
 type Metafield struct {
-	// The date and time when the metafield was created.
-	CreatedAt DateTime `json:"createdAt,omitempty"`
-	// The description of a metafield.
-	Description graphql.String `json:"description,omitempty"`
-	// Globally unique identifier.
-	ID graphql.ID `json:"id,omitempty"`
-	// The key name for a metafield.
-	Key graphql.String `json:"key,omitempty"`
-	// The ID of the corresponding resource in the REST Admin API.
-	LegacyResourceID graphql.String `json:"legacyResourceId,omitempty"`
-	// The namespace for a metafield.
-	Namespace graphql.String `json:"namespace,omitempty"`
-	// Owner type of a metafield visible to the Storefront API.
-	OwnerType graphql.String `json:"ownerType,omitempty"`
-	// The date and time when the metafield was updated.
-	UpdatedAt DateTime `json:"updatedAt,omitempty"`
-	// The value of a metafield.
-	Value graphql.String `json:"value,omitempty"`
-	// Represents the metafield value type.
-	ValueType MetafieldValueType `json:"valueType,omitempty"`
+    // The date and time when the metafield was created.
+    CreatedAt DateTime `json:"createdAt,omitempty"`
+    // The description of a metafield.
+    Description graphql.String `json:"description,omitempty"`
+    // Globally unique identifier.
+    ID graphql.ID `json:"id,omitempty"`
+    // The key name for a metafield.
+    Key graphql.String `json:"key,omitempty"`
+    // The ID of the corresponding resource in the REST Admin API.
+    LegacyResourceID graphql.String `json:"legacyResourceId,omitempty"`
+    // The namespace for a metafield.
+    Namespace graphql.String `json:"namespace,omitempty"`
+    // Owner type of a metafield visible to the Storefront API.
+    OwnerType graphql.String `json:"ownerType,omitempty"`
+    // The date and time when the metafield was updated.
+    UpdatedAt DateTime `json:"updatedAt,omitempty"`
+    // The value of a metafield.
+    Value graphql.String `json:"value,omitempty"`
+    // Represents the metafield value type.
+    Type MetafieldValueType `json:"type,omitempty"`
 }
 
 type MetafieldDeleteInput struct {
-	// The ID of the metafield to delete.
-	ID graphql.ID `json:"id,omitempty"`
+    // The ID of the metafield to delete.
+    ID graphql.ID `json:"id,omitempty"`
 }
 
 type mutationMetafieldDelete struct {
-	MetafieldDeleteResult metafieldDeleteResult `graphql:"metafieldDelete(input: $input)" json:"metafieldDelete"`
+    MetafieldDeleteResult metafieldDeleteResult `graphql:"metafieldDelete(input: $input)" json:"metafieldDelete"`
 }
 
 type metafieldDeleteResult struct {
-	DeletedID  string       `json:"deletedId,omitempty"`
-	UserErrors []UserErrors `json:"userErrors"`
+    DeletedID  string       `json:"deletedId,omitempty"`
+    UserErrors []UserErrors `json:"userErrors"`
 }
 
 func (s *MetafieldServiceOp) ListAllShopMetafields() ([]*Metafield, error) {
-	q := `
+    q := `
 		{
 			shop{
 				metafields{
@@ -77,7 +77,7 @@ func (s *MetafieldServiceOp) ListAllShopMetafields() ([]*Metafield, error) {
 							ownerType
 							updatedAt
 							value
-							valueType
+							type
 						}
 					}
 				}
@@ -85,17 +85,17 @@ func (s *MetafieldServiceOp) ListAllShopMetafields() ([]*Metafield, error) {
 		}
 `
 
-	res := []*Metafield{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
-	if err != nil {
-		return []*Metafield{}, err
-	}
+    res := []*Metafield{}
+    err := s.client.BulkOperation.BulkQuery(q, &res)
+    if err != nil {
+        return []*Metafield{}, err
+    }
 
-	return res, nil
+    return res, nil
 }
 
 func (s *MetafieldServiceOp) ListShopMetafieldsByNamespace(namespace string) ([]*Metafield, error) {
-	q := `
+    q := `
 		{
 			shop{
 				metafields(namespace: "$namespace"){
@@ -110,68 +110,68 @@ func (s *MetafieldServiceOp) ListShopMetafieldsByNamespace(namespace string) ([]
 							ownerType
 							updatedAt
 							value
-							valueType
+							type
 						}
 					}
 				}
 			}
 		}
 `
-	q = strings.ReplaceAll(q, "$namespace", namespace)
+    q = strings.ReplaceAll(q, "$namespace", namespace)
 
-	res := []*Metafield{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
-	if err != nil {
-		return []*Metafield{}, err
-	}
+    res := []*Metafield{}
+    err := s.client.BulkOperation.BulkQuery(q, &res)
+    if err != nil {
+        return []*Metafield{}, err
+    }
 
-	return res, nil
+    return res, nil
 }
 
 func (s *MetafieldServiceOp) GetShopMetafieldByKey(namespace, key string) (Metafield, error) {
-	var q struct {
-		Shop struct {
-			Metafield Metafield `graphql:"metafield(namespace: $namespace, key: $key)"`
-		} `graphql:"shop"`
-	}
-	vars := map[string]interface{}{
-		"namespace": graphql.String(namespace),
-		"key":       graphql.String(key),
-	}
+    var q struct {
+        Shop struct {
+            Metafield Metafield `graphql:"metafield(namespace: $namespace, key: $key)"`
+        } `graphql:"shop"`
+    }
+    vars := map[string]interface{}{
+        "namespace": graphql.String(namespace),
+        "key":       graphql.String(key),
+    }
 
-	err := s.client.gql.Query(context.Background(), &q, vars)
-	if err != nil {
-		return Metafield{}, err
-	}
+    err := s.client.gql.Query(context.Background(), &q, vars)
+    if err != nil {
+        return Metafield{}, err
+    }
 
-	return q.Shop.Metafield, nil
+    return q.Shop.Metafield, nil
 }
 
 func (s *MetafieldServiceOp) DeleteBulk(metafields []MetafieldDeleteInput) error {
-	for _, m := range metafields {
-		err := s.Delete(m)
-		if err != nil {
-			log.Warnf("Couldn't delete metafield (%v): %s", m, err)
-		}
-	}
+    for _, m := range metafields {
+        err := s.Delete(m)
+        if err != nil {
+            log.Warnf("Couldn't delete metafield (%v): %s", m, err)
+        }
+    }
 
-	return nil
+    return nil
 }
 
 func (s *MetafieldServiceOp) Delete(metafield MetafieldDeleteInput) error {
-	m := mutationMetafieldDelete{}
+    m := mutationMetafieldDelete{}
 
-	vars := map[string]interface{}{
-		"input": metafield,
-	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
-	if err != nil {
-		return err
-	}
+    vars := map[string]interface{}{
+        "input": metafield,
+    }
+    err := s.client.gql.Mutate(context.Background(), &m, vars)
+    if err != nil {
+        return err
+    }
 
-	if len(m.MetafieldDeleteResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.MetafieldDeleteResult.UserErrors)
-	}
+    if len(m.MetafieldDeleteResult.UserErrors) > 0 {
+        return fmt.Errorf("%+v", m.MetafieldDeleteResult.UserErrors)
+    }
 
-	return nil
+    return nil
 }
