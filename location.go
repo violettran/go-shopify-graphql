@@ -3,7 +3,7 @@ package shopify
 import (
 	"context"
 
-	"github.com/es-hs/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type LocationService interface {

@@ -11,10 +11,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/es-hs/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/graphql"
 
-	"github.com/es-hs/go-shopify-graphql/rand"
-	"github.com/es-hs/go-shopify-graphql/utils"
+	"github.com/gempages/go-shopify-graphql/rand"
+	"github.com/gempages/go-shopify-graphql/utils"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 )

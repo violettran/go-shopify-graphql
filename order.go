@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/es-hs/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type OrderService interface {

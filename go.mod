@@ -1,4 +1,4 @@
-module github.com/es-hs/go-shopify-graphql
+module github.com/gempages/go-shopify-graphql
 
 go 1.15
 

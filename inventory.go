@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/es-hs/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type InventoryService interface {

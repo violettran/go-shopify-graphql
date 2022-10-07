@@ -1,6 +1,6 @@
 package shopify
 
-import "github.com/es-hs/go-shopify-graphql/graphql"
+import "github.com/gempages/go-shopify-graphql/graphql"
 
 type UserErrors struct {
 	Field   []graphql.String
@@ -86,7 +86,7 @@ type MailingAddress struct {
 	Zip graphql.String `json:"zip,omitempty"`
 }
 
-//CountryCode enum ISO 3166-1 alpha-2 country codes with some differences.
+// CountryCode enum ISO 3166-1 alpha-2 country codes with some differences.
 type CountryCode string
 
 // CurrencyCode enum

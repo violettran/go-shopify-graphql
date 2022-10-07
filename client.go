@@ -3,8 +3,8 @@ package shopify
 import (
 	"os"
 
-	graphqlclient "github.com/es-hs/go-shopify-graphql/graph"
-	"github.com/es-hs/go-shopify-graphql/graphql"
+	graphqlclient "github.com/gempages/go-shopify-graphql/graph"
+	"github.com/gempages/go-shopify-graphql/graphql"
 
 	log "github.com/sirupsen/logrus"
 )

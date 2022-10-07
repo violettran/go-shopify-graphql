@@ -1,6 +1,6 @@
 package shopify
 
-import "github.com/es-hs/go-shopify-graphql/graphql"
+import "github.com/gempages/go-shopify-graphql/graphql"
 
 type Customer struct {
 	ID               graphql.ID     `json:"id,omitempty"`

@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/es-hs/go-shopify-graphql/graphql/ident"
+	"github.com/gempages/go-shopify-graphql/graphql/ident"
 )
 
 func constructQuery(v interface{}, variables map[string]interface{}) string {
