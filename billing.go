@@ -143,7 +143,7 @@ type MutationAppSubscriptionCancel struct {
 }
 
 type MutationAppSubscriptionCreate struct {
-	AppSubscriptionCreateResult AppSubscriptionCreateResult `graphql:"appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, test: $test)" json:"appSubscriptionCreate"`
+	AppSubscriptionCreateResult AppSubscriptionCreateResult `graphql:"appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, test: $test, trialDays: $trialDays)" json:"appSubscriptionCreate"`
 }
 
 func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (*AppCreditCreateResult, error) {
@@ -216,7 +216,7 @@ func (instance *BillingServiceOp) AppSubscriptionCreate(input *AppSubscriptionCr
 			"name":      input.Name,
 			"returnUrl": input.ReturnUrl,
 			"test":      input.Test,
-			//"trialDays": input.TrialDays,
+			"trialDays": input.TrialDays,
 		}
 		err := instance.client.gql.Mutate(context.Background(), &m, vars)
 		if err != nil {
