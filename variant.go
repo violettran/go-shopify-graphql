@@ -3,6 +3,7 @@ package shopify
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
@@ -34,6 +35,8 @@ type ProductVariant struct {
 	Image               ProductImage                     `json:"image,omitempty"`
 	AvailableForSale    graphql.Boolean                  `json:"availableForSale,omitempty"`
 	CompareAtPriceV2    MoneyV2                          `json:"compareAtPriceV2,omitempty"`
+	CreatedAt           time.Time                        `json:"createdAt,omitempty"`
+	UpdatedAt           time.Time                        `json:"updatedAt,omitempty"`
 	CurrentlyNotInStock graphql.Boolean                  `json:"currentlyNotInStock,omitempty"`
 }
 

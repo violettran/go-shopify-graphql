@@ -278,11 +278,10 @@ type productDeleteResult struct {
 }
 
 const productBaseQuery = `
-	id
-  createdAt
-	legacyResourceId
-	handle
-	status
+  id
+  legacyResourceId
+  handle
+  status
   publishedAt
   createdAt
   updatedAt
@@ -323,6 +322,8 @@ var singleProductQueryVariant = fmt.Sprintf(`
     edges {
       node {
         id
+		createdAt
+		updatedAt
         legacyResourceId
         sku
         selectedOptions {
@@ -360,6 +361,8 @@ var singleProductQueryVariantWithCursor = fmt.Sprintf(`
     edges {
       node {
         id
+		createdAt
+		updatedAt
         legacyResourceId
         sku
         selectedOptions {
@@ -421,6 +424,8 @@ var productQuery = fmt.Sprintf(`
 		edges{
 			node{
 				id
+				createdAt
+				updatedAt
 				legacyResourceId
 				sku
 				selectedOptions{
@@ -488,6 +493,7 @@ var productBulkQuery = fmt.Sprintf(`
     edges {
       node {
         id
+  		updatedAt
         title
         handle
         description
@@ -522,6 +528,8 @@ var productBulkQuery = fmt.Sprintf(`
 		edges{
 			node{
 				id
+				createdAt
+				updatedAt
 				legacyResourceId
 				sku
 				selectedOptions{
@@ -787,7 +795,6 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductBulkResult, 
   query product($id: ID!) {
     product(id: $id){
       id
-      createdAt
       legacyResourceId
       handle
       status
