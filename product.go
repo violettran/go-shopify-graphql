@@ -399,11 +399,13 @@ var singleProductQueryCollection = fmt.Sprintf(`
         handle
         description
         templateSuffix
-        productsCount
-        seo{
-          description
-          title
-        }
+       	image {
+			altText
+			height
+			id
+			src
+			width
+		}
       }
       cursor
     }
@@ -420,11 +422,13 @@ var singleProductQueryCollectionWithCursor = fmt.Sprintf(`
         handle
         description
         templateSuffix
-        productsCount
-        seo{
-          description
-          title
-        }
+		image {
+			altText
+			height
+			id
+			src
+			width
+		}
       }
       cursor
     }
