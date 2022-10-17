@@ -395,6 +395,15 @@ var singleProductQueryCollection = fmt.Sprintf(`
     edges {
       node {
         id
+        title
+        handle
+        description
+        templateSuffix
+        productsCount
+        seo{
+          description
+          title
+        }
       }
       cursor
     }
@@ -407,6 +416,15 @@ var singleProductQueryCollectionWithCursor = fmt.Sprintf(`
     edges {
       node {
         id
+		title
+        handle
+        description
+        templateSuffix
+        productsCount
+        seo{
+          description
+          title
+        }
       }
       cursor
     }
