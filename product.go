@@ -8,7 +8,6 @@ import (
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -732,7 +731,6 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
     `, singleProductQueryCollection)
 	}
 
-	logrus.Info(q)
 	vars := map[string]interface{}{
 		"id": id,
 	}
@@ -792,47 +790,12 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductBulkResult, error) {
 	q := ""
 	q = fmt.Sprintf(`
-  query product($id: ID!) {
-    product(id: $id){
-      id
-      legacyResourceId
-      handle
-      status
-      publishedAt
-      createdAt
-      updatedAt
-      tracksInventory
-      options(first:5){
-        id
-        name
-        values
-      }
-      tags
-      title
-      description
-      priceRangeV2{
-        minVariantPrice{
-          amount
-          currencyCode
-        }
-        maxVariantPrice{
-          amount
-          currencyCode
-        }
-      }
-      productType
-      vendor
-      totalInventory
-      onlineStoreUrl
-      descriptionHtml
-      seo{
-        description
-        title
-      }
-      templateSuffix
-    }
-  }
-  `)
+		query product($id: ID!) {
+			product(id: $id){
+				%s
+			}
+		}
+	`, productBaseQuery)
 
 	vars := map[string]interface{}{
 		"id": id,
@@ -842,7 +805,6 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductBulkResult, 
 		Product *ProductBulkResult `json:"product"`
 	}{}
 
-	logrus.Info(q)
 	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
