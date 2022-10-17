@@ -12,6 +12,7 @@ type BillingService interface {
 	AppPurchaseOneTimeCreate(input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error)
 	AppSubscriptionCancel(id graphql.ID, prorate graphql.Boolean) (*AppSubscriptionCancelResult, error)
 	AppSubscriptionCreate(input *AppSubscriptionCreateInput) (*AppSubscriptionCreateResult, error)
+	AppSubscriptionTrialExtend(input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error)
 }
 
 type BillingServiceOp struct {
@@ -82,6 +83,11 @@ type AppSubscriptionCreateInput struct {
 	TrialDays           graphql.Int                    `json:"trialDays,omitempty" `
 }
 
+type AppSubscriptionTrailExtendInput struct {
+	ID   graphql.ID  `json:"id,omitempty"`
+	Days graphql.Int `json:"days,omitempty" `
+}
+
 /************************************************ return structures ************************************************/
 
 type AppSubscription struct {
@@ -130,6 +136,11 @@ type AppSubscriptionCreateResult struct {
 	UserErrors      []UserErrors    `json:"userErrors"`
 }
 
+type AppSubscriptionTrailExtendResult struct {
+	AppSubscription AppSubscription `json:"appSubscription,omitempty"`
+	UserErrors      []UserErrors    `json:"userErrors"`
+}
+
 type MutationAppCreditCreate struct {
 	AppCreditCreateResult AppCreditCreateResult `graphql:"appCreditCreate(amount: $amount, description: $description, test: $test)" json:"appCreditCreate"`
 }
@@ -144,6 +155,10 @@ type MutationAppSubscriptionCancel struct {
 
 type MutationAppSubscriptionCreate struct {
 	AppSubscriptionCreateResult AppSubscriptionCreateResult `graphql:"appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, test: $test, trialDays: $trialDays)" json:"appSubscriptionCreate"`
+}
+
+type MutationAppSubscriptionTrailExtendCreate struct {
+	AppSubscriptionTrailExtendResult AppSubscriptionTrailExtendResult `graphql:"appSubscriptionTrialExtend(days: $days, id: $id)" json:"appSubscriptionTrialExtend"`
 }
 
 func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (*AppCreditCreateResult, error) {
@@ -165,6 +180,26 @@ func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (
 		}
 	}
 	return &m.AppCreditCreateResult, nil
+}
+
+func (instance *BillingServiceOp) AppSubscriptionTrialExtend(input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error) {
+	m := MutationAppSubscriptionTrailExtendCreate{}
+
+	if input != nil {
+		vars := map[string]interface{}{
+			"days": input.Days,
+			"id":   input.ID,
+		}
+		err := instance.client.gql.Mutate(context.Background(), &m, vars)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(m.AppSubscriptionTrailExtendResult.UserErrors) > 0 {
+			return nil, fmt.Errorf("%+v", m.AppSubscriptionTrailExtendResult.UserErrors)
+		}
+	}
+	return &m.AppSubscriptionTrailExtendResult, nil
 }
 
 func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error) {
