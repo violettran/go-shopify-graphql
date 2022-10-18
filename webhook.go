@@ -202,7 +202,6 @@ func (w WebhookServiceOp) NewEventBridgeWebhookSubcription(topic WebhookTopic, i
 
 func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error) {
 	m := mutationWebhookDelete{}
-	logrus.Info(webhookID)
 	vars := map[string]interface{}{
 		"id": webhookID,
 	}

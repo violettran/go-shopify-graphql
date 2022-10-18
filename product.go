@@ -8,7 +8,6 @@ import (
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,7 +19,7 @@ type ProductService interface {
 	Get(gid graphql.ID) (*ProductQueryResult, error)
 	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProduct(id graphql.ID) (*ProductBulkResult, error)
+	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
 
 	Create(product *ProductCreate) error
 	CreateBulk(products []*ProductCreate) error
@@ -111,11 +110,7 @@ type ProductQueryResult struct {
 			Cursor     string     `json:"cursor,omitempty"`
 		} `json:"edges,omitempty"`
 		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	}
-	ProductOptions []struct {
-		ProductOption ProductOption `json:"node,omitempty"`
-		Cursor        string        `json:"cursor,omitempty"`
-	} `json:"options,omitempty"`
+	} `json:"collections,omitempty"`
 }
 
 type ProductShort struct {
@@ -400,6 +395,17 @@ var singleProductQueryCollection = fmt.Sprintf(`
     edges {
       node {
         id
+        title
+        handle
+        description
+        templateSuffix
+       	image {
+			altText
+			height
+			id
+			src
+			width
+		}
       }
       cursor
     }
@@ -412,6 +418,17 @@ var singleProductQueryCollectionWithCursor = fmt.Sprintf(`
     edges {
       node {
         id
+		title
+        handle
+        description
+        templateSuffix
+		image {
+			altText
+			height
+			id
+			src
+			width
+		}
       }
       cursor
     }
@@ -732,7 +749,6 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
     `, singleProductQueryCollection)
 	}
 
-	logrus.Info(q)
 	vars := map[string]interface{}{
 		"id": id,
 	}
@@ -789,60 +805,26 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductBulkResult, error) {
+func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
 	q := ""
 	q = fmt.Sprintf(`
-  query product($id: ID!) {
-    product(id: $id){
-      id
-      legacyResourceId
-      handle
-      status
-      publishedAt
-      createdAt
-      updatedAt
-      tracksInventory
-      options(first:5){
-        id
-        name
-        values
-      }
-      tags
-      title
-      description
-      priceRangeV2{
-        minVariantPrice{
-          amount
-          currencyCode
-        }
-        maxVariantPrice{
-          amount
-          currencyCode
-        }
-      }
-      productType
-      vendor
-      totalInventory
-      onlineStoreUrl
-      descriptionHtml
-      seo{
-        description
-        title
-      }
-      templateSuffix
-    }
-  }
-  `)
+		query product($id: ID!) {
+			product(id: $id){
+				%s
+				%s
+				%s
+			}
+		}
+	`, productBaseQuery, singleProductQueryVariant, singleProductQueryCollection)
 
 	vars := map[string]interface{}{
 		"id": id,
 	}
 
 	out := struct {
-		Product *ProductBulkResult `json:"product"`
+		Product *ProductQueryResult `json:"product"`
 	}{}
 
-	logrus.Info(q)
 	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
