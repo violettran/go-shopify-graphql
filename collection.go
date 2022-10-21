@@ -6,12 +6,12 @@ import (
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
 type CollectionService interface {
 	ListAll() ([]*CollectionBulkResult, error)
+	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
 
 	Get(id graphql.ID) (*CollectionQueryResult, error)
 	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
@@ -53,6 +53,16 @@ type CollectionBulkResult struct {
 	CollectionBase
 
 	Products []ProductBulkResult `json:"products,omitempty"`
+}
+
+type CollectionsQueryResult struct {
+	Collections struct {
+		Edges []struct {
+			Collection CollectionQueryResult `json:"node,omitempty"`
+			Cursor     string                `json:"cursor,omitempty"`
+		} `json:"edges,omitempty"`
+		PageInfo PageInfo `json:"pageInfo,omitempty"`
+	} `json:"collections,omitempty"`
 }
 
 type CollectionQueryResult struct {
@@ -282,6 +292,39 @@ func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	return res, nil
 }
 
+func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
+	q := fmt.Sprintf(`
+		query collections($first: Int!, $cursor: String) {
+			collections(first: $first, after: $cursor){
+                edges{
+					node {
+						%s
+					}
+                    cursor
+                }
+                pageInfo {
+                      hasNextPage
+                }
+			}
+		}
+	`, collectionBulkQuery)
+
+	vars := map[string]interface{}{
+		"first": first,
+	}
+	if cursor != "" {
+		vars["cursor"] = cursor
+	}
+
+	out := CollectionsQueryResult{}
+
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
 func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
 	out, err := s.getPage(id, "")
 	if err != nil {
@@ -350,7 +393,6 @@ func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string) 
     `, collectionSingleQuery)
 	}
 
-	logrus.Info(q)
 	vars := map[string]interface{}{
 		"id": id,
 	}

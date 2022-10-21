@@ -106,6 +106,7 @@ func NewClientWithToken(apiKey string, storeName string) *Client {
 func NewClientStoreFrontWithToken(apiKey string, storeName string) *Client {
 	c := &Client{gql: newShopifyStoreFrontGraphQLClientWithToken(apiKey, storeName)}
 	c.Cart = &CartServiceOp{client: c}
+	c.Product = &ProductServiceOp{client: c}
 	return c
 }
 
