@@ -12,6 +12,7 @@ import (
 type CollectionService interface {
 	ListAll() ([]*CollectionBulkResult, error)
 	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
+	ListIDsByCursor(first int, cursor string) (*CollectionsQueryResult, error)
 
 	Get(id graphql.ID) (*CollectionQueryResult, error)
 	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
@@ -325,6 +326,41 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*Collectio
 
 	return &out, nil
 }
+
+func (s *CollectionServiceOp) ListIDsByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
+	q := fmt.Sprintf(`
+		query collections($first: Int!, $cursor: String) {
+			collections(first: $first, after: $cursor){
+                edges{
+					node {
+						id
+					}
+                    cursor
+                }
+                pageInfo {
+                      hasNextPage
+                }
+			}
+		}
+	`)
+
+	vars := map[string]interface{}{
+		"first": first,
+	}
+	if cursor != "" {
+		vars["cursor"] = cursor
+	}
+
+	out := CollectionsQueryResult{}
+
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
 func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
 	out, err := s.getPage(id, "")
 	if err != nil {
