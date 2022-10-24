@@ -21,6 +21,9 @@ type ProductService interface {
 	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
 
+	// Use for check product ID exists (using as storefront API)
+	CheckID(gid graphql.ID) (*ProductQueryResult, error)
+
 	Create(product *ProductCreate) error
 	CreateBulk(products []*ProductCreate) error
 
@@ -111,6 +114,13 @@ type ProductQueryResult struct {
 		} `json:"edges,omitempty"`
 		PageInfo PageInfo `json:"pageInfo,omitempty"`
 	} `json:"collections,omitempty"`
+	Images struct {
+		Edges []struct {
+			Collection Collection `json:"node,omitempty"`
+			Cursor     string     `json:"cursor,omitempty"`
+		} `json:"edges,omitempty"`
+		PageInfo PageInfo `json:"pageInfo,omitempty"`
+	} `json:"images,omitempty"`
 }
 
 type ProductShort struct {
@@ -806,8 +816,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 }
 
 func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
-	q := ""
-	q = fmt.Sprintf(`
+	q := fmt.Sprintf(`
 		query product($id: ID!) {
 			product(id: $id){
 				%s
@@ -816,6 +825,32 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 			}
 		}
 	`, productBaseQuery, singleProductQueryVariant, singleProductQueryCollection)
+
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	out := struct {
+		Product *ProductQueryResult `json:"product"`
+	}{}
+
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Product, nil
+}
+
+func (s *ProductServiceOp) CheckID(id graphql.ID) (*ProductQueryResult, error) {
+	q := fmt.Sprintf(`
+		query product($id: ID!) {
+			product(id: $id){
+				id
+				title
+			}
+		}
+	`)
 
 	vars := map[string]interface{}{
 		"id": id,

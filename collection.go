@@ -20,6 +20,9 @@ type CollectionService interface {
 	Create(collection *CollectionCreate) (graphql.ID, error)
 	CreateBulk(collections []*CollectionCreate) error
 
+	// Use for check product ID exists (using as storefront API)
+	CheckID(gid graphql.ID) (*CollectionQueryResult, error)
+
 	Update(collection *CollectionCreate) error
 }
 
@@ -439,6 +442,32 @@ func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string) 
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Collection, nil
+}
+
+func (s *CollectionServiceOp) CheckID(id graphql.ID) (*CollectionQueryResult, error) {
+	q := fmt.Sprintf(`
+		query collection($id: ID!) {
+			collection(id: $id){
+				id
+				title
+			}
+		}
+	`)
+
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	out := struct {
+		Collection *CollectionQueryResult `json:"product"`
+	}{}
+
 	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
