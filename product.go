@@ -14,16 +14,12 @@ import (
 type ProductService interface {
 	List(query string) ([]*ProductBulkResult, error)
 	ListAll() ([]*ProductBulkResult, error)
+	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
 
-	ListIDsByCursor(first int, cursor string) (*ProductsQueryResult, error)
 	Get(gid graphql.ID) (*ProductQueryResult, error)
 	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
-
-	// Use for check product ID exists (using as storefront API)
-	CheckID(gid graphql.ID) (*ProductQueryResult, error)
-
 	Create(product *ProductCreate) error
 	CreateBulk(products []*ProductCreate) error
 
@@ -657,40 +653,6 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	return res, nil
 }
 
-func (s *ProductServiceOp) ListIDsByCursor(first int, cursor string) (*ProductsQueryResult, error) {
-	q := fmt.Sprintf(`
-		query products($first: Int!, $cursor: String) {
-			products(first: $first, after: $cursor){
-                edges{
-                    cursor
-                    node {
-                        id
-                    }
-                }
-                pageInfo {
-                      hasNextPage
-                }
-			}
-		}
-	`)
-
-	vars := map[string]interface{}{
-		"first": first,
-	}
-	if cursor != "" {
-		vars["cursor"] = cursor
-	}
-
-	out := ProductsQueryResult{}
-
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	return &out, nil
-}
-
 func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
 	out, err := s.getPage(id, "")
 	if err != nil {
@@ -842,30 +804,41 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) CheckID(id graphql.ID) (*ProductQueryResult, error) {
-	q := fmt.Sprintf(`
-		query product($id: ID!) {
-			product(id: $id){
-				id
-				title
-			}
-		}
-	`)
-
-	vars := map[string]interface{}{
-		"id": id,
+func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) (*ProductsQueryResult, error) {
+	if fields == "" {
+		fields = `id`
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	q := fmt.Sprintf(`
+		query products($first: Int!, $cursor: String, $query: String) {
+			products(first: $first, after: $cursor, query:$query){
+				edges{
+					cursor
+					node {
+						%s
+					}
+				}
+			}
+		}
+	`, fields)
+
+	vars := map[string]interface{}{
+		"first": first,
+	}
+	if cursor != "" {
+		vars["cursor"] = cursor
+	}
+	if query != "" {
+		vars["query"] = query
+	}
+	out := &ProductsQueryResult{}
 
 	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return out, nil
 }
 
 func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
