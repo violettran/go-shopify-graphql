@@ -12,7 +12,7 @@ import (
 type CollectionService interface {
 	ListAll() ([]*CollectionBulkResult, error)
 	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
-	ListIDsByCursor(first int, cursor string) (*CollectionsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
 
 	Get(id graphql.ID) (*CollectionQueryResult, error)
 	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
@@ -327,22 +327,23 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*Collectio
 	return &out, nil
 }
 
-func (s *CollectionServiceOp) ListIDsByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string) (*CollectionsQueryResult, error) {
+	if fields == "" {
+		fields = `id`
+	}
+
 	q := fmt.Sprintf(`
-		query collections($first: Int!, $cursor: String) {
-			collections(first: $first, after: $cursor){
-                edges{
+		query collections($first: Int!, $cursor: String, $query: String) {
+			collections(first: $first, after: $cursor, query:$query){
+				edges{
+					cursor
 					node {
-						id
+						%s
 					}
-                    cursor
-                }
-                pageInfo {
-                      hasNextPage
-                }
+				}
 			}
 		}
-	`)
+	`, fields)
 
 	vars := map[string]interface{}{
 		"first": first,
@@ -350,15 +351,17 @@ func (s *CollectionServiceOp) ListIDsByCursor(first int, cursor string) (*Collec
 	if cursor != "" {
 		vars["cursor"] = cursor
 	}
-
-	out := CollectionsQueryResult{}
+	if query != "" {
+		vars["query"] = query
+	}
+	out := &CollectionsQueryResult{}
 
 	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
 
-	return &out, nil
+	return out, nil
 }
 
 func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
