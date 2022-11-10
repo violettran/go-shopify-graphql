@@ -343,6 +343,13 @@ var singleProductQueryVariant = fmt.Sprintf(`
           }
           requiresShipping
         }
+		image {
+			altText
+			height
+			id
+			src
+			width
+		}
         barcode
         title
         inventoryPolicy
