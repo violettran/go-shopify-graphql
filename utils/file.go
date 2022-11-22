@@ -27,13 +27,14 @@ func ReadFile(file string) (data string, err error) {
 }
 
 func DownloadFile(ctx context.Context, filepath string, url string) error {
-	var err error
-	var resp *http.Response
-	span := sentry.StartSpan(ctx, "file.download")
+	var (
+		err  error
+		resp *http.Response
+	)
+
+	span := sentry.StartSpan(ctx, "shopify.download_file")
 	span.Description = fmt.Sprintf("path: %s\nurl: %s", filepath, url)
-	defer func() {
-		tracing.FinishSpan(span, err)
-	}()
+	defer tracing.FinishSpan(span, err)
 
 	resp, err = http.Get(url)
 	if err != nil {

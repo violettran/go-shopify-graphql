@@ -153,7 +153,7 @@ func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(ctx context.Context, in
 
 	for q.Status == "CREATED" || q.Status == "RUNNING" || q.Status == "CANCELING" {
 		span := sentry.StartSpan(ctx, "time.sleep")
-		span.Description = "interval wait bulk operation"
+		span.Description = "interval"
 		time.Sleep(interval)
 		tracing.FinishSpan(span, ctx.Err())
 
@@ -214,6 +214,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 	)
 
 	span := sentry.StartSpan(ctx, "bulk.query")
+	span.Description = fmt.Sprintf("query: %s", query)
 	defer tracing.FinishSpan(span, err)
 
 	ctx = span.Context()

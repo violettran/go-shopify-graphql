@@ -319,6 +319,8 @@ github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5
 github.com/fsnotify/fsnotify v1.5.4/go.mod h1:OVB6XrOHzAwXMpEM7uPOzcehqUV2UqJxmVXmkdnm1bU=
 github.com/gempages/go-helper v1.0.25 h1:anZAjjT0zzioG9NCIXOFJtnSXT+SwN4gXSUF750A6bc=
 github.com/gempages/go-helper v1.0.25/go.mod h1:aEAmaNrV08hLb6gDVCEWFahPUi15vw1JhoU3+MYOW8Y=
+github.com/gempages/go-helper v1.0.26 h1:0Ms6+XfNDE9NCK+1dyhsie11vzZNoblbKGyvbLUBFbk=
+github.com/gempages/go-helper v1.0.26/go.mod h1:aEAmaNrV08hLb6gDVCEWFahPUi15vw1JhoU3+MYOW8Y=
 github.com/gempages/wrapchinery v0.0.0-20221007084939-66f5a9facf13/go.mod h1:q7QX2krGjN/8NV4uIeYIfM4Y29wdIwVipvQR2RcUDzQ=
 github.com/getsentry/sentry-go v0.14.0/go.mod h1:RZPJKSw+adu8PBNygiri/A98FqVr2HtRckJk9XVxJ9I=
 github.com/getsentry/sentry-go v0.15.0 h1:CP9bmA7pralrVUedYZsmIHWpq/pBtXTSew7xvVpfLaA=

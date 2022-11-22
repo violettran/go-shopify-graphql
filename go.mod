@@ -3,7 +3,7 @@ module github.com/gempages/go-shopify-graphql
 go 1.15
 
 require (
-	github.com/gempages/go-helper v1.0.25
+	github.com/gempages/go-helper v1.0.26
 	github.com/getsentry/sentry-go v0.15.0
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
