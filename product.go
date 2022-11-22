@@ -12,23 +12,23 @@ import (
 )
 
 type ProductService interface {
-	List(query string) ([]*ProductBulkResult, error)
-	ListAll() ([]*ProductBulkResult, error)
-	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
+	List(ctx context.Context, query string) ([]*ProductBulkResult, error)
+	ListAll(ctx context.Context) ([]*ProductBulkResult, error)
+	ListWithFields(ctx context.Context, first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
 
-	Get(gid graphql.ID) (*ProductQueryResult, error)
-	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
-	Create(product *ProductCreate) error
-	CreateBulk(products []*ProductCreate) error
+	Get(ctx context.Context, gid graphql.ID) (*ProductQueryResult, error)
+	GetSingleProductCollection(ctx context.Context, id graphql.ID, cursor string) (*ProductQueryResult, error)
+	GetSingleProductVariant(ctx context.Context, id graphql.ID, cursor string) (*ProductQueryResult, error)
+	GetSingleProduct(ctx context.Context, id graphql.ID) (*ProductQueryResult, error)
+	Create(ctx context.Context, product *ProductCreate) error
+	CreateBulk(ctx context.Context, products []*ProductCreate) error
 
-	Update(product *ProductUpdate) error
-	UpdateBulk(products []*ProductUpdate) error
+	Update(ctx context.Context, product *ProductUpdate) error
+	UpdateBulk(ctx context.Context, products []*ProductUpdate) error
 
-	Delete(product *ProductDelete) error
-	DeleteBulk(products []*ProductDelete) error
-	TriggerListAll() (id graphql.ID, err error)
+	Delete(ctx context.Context, product *ProductDelete) error
+	DeleteBulk(ctx context.Context, products []*ProductDelete) error
+	TriggerListAll(ctx context.Context) (id graphql.ID, err error)
 }
 
 type ProductServiceOp struct {
@@ -596,7 +596,7 @@ var productBulkQuery = fmt.Sprintf(`
 	}
 `, productBaseQuery)
 
-func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
+func (s *ProductServiceOp) ListAll(ctx context.Context) ([]*ProductBulkResult, error) {
 	q := fmt.Sprintf(`
 		{
 			products{
@@ -610,7 +610,7 @@ func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
 	`, productBulkQuery)
 
 	res := []*ProductBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []*ProductBulkResult{}, err
 	}
@@ -618,7 +618,7 @@ func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
 	return res, nil
 }
 
-func (s *ProductServiceOp) TriggerListAll() (id graphql.ID, err error) {
+func (s *ProductServiceOp) TriggerListAll(ctx context.Context) (id graphql.ID, err error) {
 	q := fmt.Sprintf(`
 		{
 			products{
@@ -632,11 +632,11 @@ func (s *ProductServiceOp) TriggerListAll() (id graphql.ID, err error) {
 	`, productBulkQuery)
 
 	res := []*ProductBulkResult{}
-	id, err = s.client.BulkOperation.BulkQueryRunOnly(q, &res)
+	id, err = s.client.BulkOperation.BulkQueryRunOnly(context.Background(), q, &res)
 	return id, err
 }
 
-func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
+func (s *ProductServiceOp) List(ctx context.Context, query string) ([]*ProductBulkResult, error) {
 	q := fmt.Sprintf(`
 		{
 			products(query: "$query"){
@@ -652,7 +652,7 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	q = strings.ReplaceAll(q, "$query", query)
 
 	res := []*ProductBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return []*ProductBulkResult{}, err
 	}
@@ -660,8 +660,8 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	return res, nil
 }
 
-func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
-	out, err := s.getPage(id, "")
+func (s *ProductServiceOp) Get(ctx context.Context, id graphql.ID) (*ProductQueryResult, error) {
+	out, err := s.getPage(ctx, id, "")
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +670,7 @@ func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
 	hasNextPage := out.ProductVariants.PageInfo.HasNextPage
 	for hasNextPage && len(nextPageData.ProductVariants.Edges) > 0 {
 		cursor := nextPageData.ProductVariants.Edges[len(nextPageData.ProductVariants.Edges)-1].Cursor
-		nextPageData, err := s.getPage(id, cursor)
+		nextPageData, err := s.getPage(ctx, id, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -681,7 +681,7 @@ func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
 	return out, nil
 }
 
-func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) getPage(ctx context.Context, id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!, $cursor: String) {
 			product(id: $id){
@@ -700,7 +700,7 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -708,7 +708,7 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductCollection(ctx context.Context, id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -738,7 +738,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -746,7 +746,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductVariant(ctx context.Context, id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -776,7 +776,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +784,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProduct(ctx context.Context, id graphql.ID) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!) {
 			product(id: $id){
@@ -803,7 +803,7 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 		Product *ProductQueryResult `json:"product"`
 	}{}
 
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -811,7 +811,7 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) (*ProductsQueryResult, error) {
+func (s *ProductServiceOp) ListWithFields(ctx context.Context, first int, cursor, query, fields string) (*ProductsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -840,7 +840,7 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	}
 	out := &ProductsQueryResult{}
 
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -848,9 +848,9 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	return out, nil
 }
 
-func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
+func (s *ProductServiceOp) CreateBulk(ctx context.Context, products []*ProductCreate) error {
 	for _, p := range products {
-		err := s.Create(p)
+		err := s.Create(ctx, p)
 		if err != nil {
 			log.Warnf("Couldn't create product (%v): %s", p, err)
 		}
@@ -859,7 +859,7 @@ func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Create(product *ProductCreate) error {
+func (s *ProductServiceOp) Create(ctx context.Context, product *ProductCreate) error {
 	m := mutationProductCreate{}
 
 	vars := map[string]interface{}{
@@ -878,9 +878,9 @@ func (s *ProductServiceOp) Create(product *ProductCreate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate) error {
+func (s *ProductServiceOp) UpdateBulk(ctx context.Context, products []*ProductUpdate) error {
 	for _, p := range products {
-		err := s.Update(p)
+		err := s.Update(ctx, p)
 		if err != nil {
 			log.Warnf("Couldn't update product (%v): %s", p, err)
 		}
@@ -889,13 +889,13 @@ func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Update(product *ProductUpdate) error {
+func (s *ProductServiceOp) Update(ctx context.Context, product *ProductUpdate) error {
 	m := mutationProductUpdate{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -907,9 +907,9 @@ func (s *ProductServiceOp) Update(product *ProductUpdate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete) error {
+func (s *ProductServiceOp) DeleteBulk(ctx context.Context, products []*ProductDelete) error {
 	for _, p := range products {
-		err := s.Delete(p)
+		err := s.Delete(ctx, p)
 		if err != nil {
 			log.Warnf("Couldn't delete product (%v): %s", p, err)
 		}
@@ -918,13 +918,13 @@ func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Delete(product *ProductDelete) error {
+func (s *ProductServiceOp) Delete(ctx context.Context, product *ProductDelete) error {
 	m := mutationProductDelete{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}

@@ -424,7 +424,7 @@ func (s *OrderServiceOp) List(opts ListOptions) ([]*Order, error) {
 	q = strings.ReplaceAll(q, "$query", opts.Query)
 
 	res := []*Order{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []*Order{}, err
 	}
@@ -455,7 +455,7 @@ func (s *OrderServiceOp) ListAll() ([]*Order, error) {
 	`, orderBaseQuery, lineItemFragment)
 
 	res := []*Order{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []*Order{}, err
 	}
@@ -584,7 +584,7 @@ func (s *OrderServiceOp) GetFulfillmentOrdersAtLocation(orderID graphql.ID, loca
 	q = strings.ReplaceAll(q, "$id", orderID.(string))
 	q = strings.ReplaceAll(q, "$query", fmt.Sprintf(`assigned_location_id:%s`, locationID.(string)))
 	res := []FulfillmentOrder{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []FulfillmentOrder{}, err
 	}
