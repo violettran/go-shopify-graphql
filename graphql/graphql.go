@@ -5,9 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
+	"github.com/gempages/go-helper/tracing"
+	"github.com/gempages/go-shopify-graphql/utils"
+	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -41,6 +44,7 @@ func (c *Client) QueryString(ctx context.Context, q string, variables map[string
 // q should be a pointer to struct that corresponds to the GraphQL schema.
 func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]interface{}) error {
 	query := constructQuery(q, variables)
+
 	return c.do(ctx, query, variables, q)
 }
 
@@ -49,13 +53,13 @@ func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]
 // m should be a pointer to struct that corresponds to the GraphQL schema.
 func (c *Client) Mutate(ctx context.Context, m interface{}, variables map[string]interface{}) error {
 	query := constructMutation(m, variables)
-	fmt.Println(query)
 	// return nil
 	return c.do(ctx, query, variables, m)
 }
 
 // do executes a single GraphQL operation.
 func (c *Client) do(ctx context.Context, query string, variables map[string]interface{}, v interface{}) error {
+	var err error
 	in := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables,omitempty"`
@@ -63,8 +67,22 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 		Query:     query,
 		Variables: variables,
 	}
+
+	// sentry tracing
+	span := sentry.StartSpan(ctx, "shopify_graphql.send")
+	span.Description = utils.GetDescriptionFromQuery(query)
+	span.Data = map[string]interface{}{
+		"GraphQL Query":     query,
+		"GraphQL Variables": variables,
+		"URL":               c.url,
+	}
+	defer func() {
+		tracing.FinishSpan(span, err)
+	}()
+	// end sentry tracing
+
 	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(in)
+	err = json.NewEncoder(&buf).Encode(in)
 	if err != nil {
 		return err
 	}
@@ -74,7 +92,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("non-200 OK status code: %v body: %q", resp.Status, body)
 	}
 	var out struct {

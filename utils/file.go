@@ -1,10 +1,14 @@
 package utils
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/gempages/go-helper/tracing"
+	"github.com/getsentry/sentry-go"
 )
 
 func CloseFile(f *os.File) {
@@ -21,7 +25,15 @@ func ReadFile(file string) (data string, err error) {
 	return
 }
 
-func DownloadFile(filepath string, url string) error {
+func DownloadFile(ctx context.Context, filepath string, url string) error {
+	var err error
+
+	span := sentry.StartSpan(ctx, "shopify.download_file")
+	span.Description = url
+	defer func() {
+		tracing.FinishSpan(span, err)
+	}()
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return err

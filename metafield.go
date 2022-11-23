@@ -86,7 +86,7 @@ func (s *MetafieldServiceOp) ListAllShopMetafields() ([]*Metafield, error) {
 `
 
 	res := []*Metafield{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []*Metafield{}, err
 	}
@@ -120,7 +120,7 @@ func (s *MetafieldServiceOp) ListShopMetafieldsByNamespace(namespace string) ([]
 	q = strings.ReplaceAll(q, "$namespace", namespace)
 
 	res := []*Metafield{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
 	if err != nil {
 		return []*Metafield{}, err
 	}
