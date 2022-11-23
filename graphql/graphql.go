@@ -71,10 +71,11 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	// sentry tracing
 	span := sentry.StartSpan(ctx, "shopify_graphql.send")
 	span.Description = utils.GetDescriptionFromQuery(query)
-	span.Data = make(map[string]interface{}, 0)
-	span.Data["GraphQL Query"] = query
-	span.Data["Variables"] = variables
-	span.Data["URL"] = c.url
+	span.Data = map[string]interface{}{
+		"GraphQL Query":     query,
+		"GraphQL Variables": variables,
+		"URL":               c.url,
+	}
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
