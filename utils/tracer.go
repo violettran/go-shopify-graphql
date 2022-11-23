@@ -25,7 +25,7 @@ func GetDescriptionFromQuery(query string) string {
 				}
 				err = json.Unmarshal(data, field)
 				if err != nil {
-					description = ""
+					description += "," + field.Name
 				}
 			}
 		}
