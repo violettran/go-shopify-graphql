@@ -29,10 +29,7 @@ func DownloadFile(ctx context.Context, filepath string, url string) error {
 	var err error
 
 	span := sentry.StartSpan(ctx, "shopify.download_file")
-	span.Tags = map[string]string{
-		"path": filepath,
-		"url":  url,
-	}
+	span.Description = url
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
