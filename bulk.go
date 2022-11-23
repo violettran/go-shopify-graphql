@@ -210,10 +210,8 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 
 	// sentry tracing
 	span := sentry.StartSpan(ctx, "bulk.query")
-	span.Tags = map[string]string{
-		"query": query,
-	}
 	span.Description = utils.GetDescriptionFromQuery(query)
+	span.SetTag("query", query)
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
