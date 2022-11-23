@@ -11,7 +11,6 @@ import (
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
-	"github.com/spf13/cast"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -72,9 +71,9 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	// sentry tracing
 	span := sentry.StartSpan(ctx, "shopify_graphql.send")
 	span.Description = utils.GetDescriptionFromQuery(query)
-	span.SetTag("query", query)
-	span.SetTag("variables", cast.ToString(variables))
-	span.SetTag("url", c.url)
+	span.Data["GraphQL Query"] = query
+	span.Data["Variables"] = variables
+	span.Data["URL"] = c.url
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
