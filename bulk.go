@@ -209,7 +209,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 	var err error
 
 	// sentry tracing
-	span := sentry.StartSpan(ctx, "bulk.query")
+	span := sentry.StartSpan(ctx, "shopify_graphql.bulk_query")
 	span.Description = utils.GetDescriptionFromQuery(query)
 	span.SetTag("query", query)
 	defer func() {
