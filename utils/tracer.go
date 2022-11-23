@@ -20,7 +20,6 @@ func GetDescriptionFromQuery(query string) string {
 				field := &ast.Field{}
 				data, err := json.Marshal(selectionSet)
 				if err != nil {
-					description = ""
 					break
 				}
 				err = json.Unmarshal(data, field)
