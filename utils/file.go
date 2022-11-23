@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -27,16 +26,18 @@ func ReadFile(file string) (data string, err error) {
 }
 
 func DownloadFile(ctx context.Context, filepath string, url string) error {
-	var (
-		err  error
-		resp *http.Response
-	)
+	var err error
 
 	span := sentry.StartSpan(ctx, "shopify.download_file")
-	span.Description = fmt.Sprintf("path: %s\nurl: %s", filepath, url)
-	defer tracing.FinishSpan(span, err)
+	span.Tags = map[string]string{
+		"path": filepath,
+		"url":  url,
+	}
+	defer func() {
+		tracing.FinishSpan(span, err)
+	}()
 
-	resp, err = http.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}

@@ -13,10 +13,9 @@ import (
 
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/getsentry/sentry-go"
-
 	"github.com/gempages/go-shopify-graphql/rand"
 	"github.com/gempages/go-shopify-graphql/utils"
+	"github.com/getsentry/sentry-go"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 )
@@ -207,15 +206,18 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery(ctx context.Context) (er
 }
 
 func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, out interface{}) error {
-	var (
-		err error
-		id  graphql.ID
-		url string
-	)
+	var err error
 
+	// sentry tracing
 	span := sentry.StartSpan(ctx, "bulk.query")
-	span.Description = fmt.Sprintf("query: %s", query)
-	defer tracing.FinishSpan(span, err)
+	span.Tags = map[string]string{
+		"query": query,
+	}
+	span.Description = utils.GetDescriptionFromQuery(query)
+	defer func() {
+		tracing.FinishSpan(span, err)
+	}()
+	// end sentry tracing
 
 	ctx = span.Context()
 	_, err = s.WaitForCurrentBulkQuery(ctx, 1*time.Second)
@@ -223,7 +225,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 		return err
 	}
 
-	id, err = s.PostBulkQuery(ctx, query)
+	id, err := s.PostBulkQuery(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -232,7 +234,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 		return fmt.Errorf("Posted operation ID is nil")
 	}
 
-	url, err = s.ShouldGetBulkQueryResultURL(ctx, id)
+	url, err := s.ShouldGetBulkQueryResultURL(ctx, id)
 	if err != nil {
 		return err
 	}
