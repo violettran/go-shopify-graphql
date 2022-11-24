@@ -17,6 +17,7 @@ import (
 type Client struct {
 	url        string // GraphQL server URL.
 	httpClient *http.Client
+	ctx        context.Context
 }
 
 // NewClient creates a GraphQL client targeting the specified GraphQL server URL.
@@ -28,6 +29,16 @@ func NewClient(url string, httpClient *http.Client) *Client {
 	return &Client{
 		url:        url,
 		httpClient: httpClient,
+	}
+}
+
+// Option is used to configure options
+type Option func(c *Client)
+
+// WithContext optionally sets custom context
+func WithContext(ctx context.Context) Option {
+	return func(c *Client) {
+		c.ctx = ctx
 	}
 }
 
@@ -43,7 +54,6 @@ func (c *Client) QueryString(ctx context.Context, q string, variables map[string
 // q should be a pointer to struct that corresponds to the GraphQL schema.
 func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]interface{}) error {
 	query := constructQuery(q, variables)
-
 	return c.do(ctx, query, variables, q)
 }
 
@@ -58,6 +68,9 @@ func (c *Client) Mutate(ctx context.Context, m interface{}, variables map[string
 
 // do executes a single GraphQL operation.
 func (c *Client) do(ctx context.Context, query string, variables map[string]interface{}, v interface{}) error {
+	if c.ctx != nil {
+		ctx = c.ctx
+	}
 	var err error
 	in := struct {
 		Query     string                 `json:"query"`
@@ -67,7 +80,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 		Variables: variables,
 	}
 
-	span := sentry.StartSpan(ctx, "shopify_graphql.send")
+	span := sentry.StartSpan(c.ctx, "shopify_graphql.send")
 	span.Description = fmt.Sprintf("query: %s\nvariables: %s\nurl: %s", query, variables, c.url)
 	defer tracing.FinishSpan(span, err)
 	var buf bytes.Buffer
@@ -75,7 +88,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	if err != nil {
 		return err
 	}
-	resp, err := ctxhttp.Post(ctx, c.httpClient, c.url, "application/json", &buf)
+	resp, err := ctxhttp.Post(c.ctx, c.httpClient, c.url, "application/json", &buf)
 	if err != nil {
 		return err
 	}
