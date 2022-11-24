@@ -99,7 +99,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	if err != nil {
 		return err
 	}
-	resp, err := ctxhttp.Post(c.ctx, c.httpClient, c.url, "application/json", &buf)
+	resp, err := ctxhttp.Post(ctx, c.httpClient, c.url, "application/json", &buf)
 	if err != nil {
 		return err
 	}
