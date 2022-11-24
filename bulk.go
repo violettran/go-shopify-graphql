@@ -13,10 +13,9 @@ import (
 
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/getsentry/sentry-go"
-
 	"github.com/gempages/go-shopify-graphql/rand"
 	"github.com/gempages/go-shopify-graphql/utils"
+	"github.com/getsentry/sentry-go"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 )
@@ -153,7 +152,7 @@ func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(ctx context.Context, in
 
 	for q.Status == "CREATED" || q.Status == "RUNNING" || q.Status == "CANCELING" {
 		span := sentry.StartSpan(ctx, "time.sleep")
-		span.Description = "interval wait bulk operation"
+		span.Description = "interval"
 		time.Sleep(interval)
 		tracing.FinishSpan(span, ctx.Err())
 
@@ -207,14 +206,16 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery(ctx context.Context) (er
 }
 
 func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, out interface{}) error {
-	var (
-		err error
-		id  graphql.ID
-		url string
-	)
+	var err error
 
-	span := sentry.StartSpan(ctx, "bulk.query")
-	defer tracing.FinishSpan(span, err)
+	// sentry tracing
+	span := sentry.StartSpan(ctx, "shopify_graphql.bulk_query")
+	span.Description = utils.GetDescriptionFromQuery(query)
+	span.SetTag("query", query)
+	defer func() {
+		tracing.FinishSpan(span, err)
+	}()
+	// end sentry tracing
 
 	ctx = span.Context()
 	_, err = s.WaitForCurrentBulkQuery(ctx, 1*time.Second)
@@ -222,7 +223,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 		return err
 	}
 
-	id, err = s.PostBulkQuery(ctx, query)
+	id, err := s.PostBulkQuery(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -231,7 +232,7 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 		return fmt.Errorf("Posted operation ID is nil")
 	}
 
-	url, err = s.ShouldGetBulkQueryResultURL(ctx, id)
+	url, err := s.ShouldGetBulkQueryResultURL(ctx, id)
 	if err != nil {
 		return err
 	}
