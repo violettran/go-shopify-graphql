@@ -88,7 +88,7 @@ func (s *BulkOperationServiceOp) PostBulkQuery(query string) (graphql.ID, error)
 		"query": graphql.String(query),
 	}
 
-	err := s.client.gql.Mutate(s.client.gql.GetContext(), &m, vars)
+	err := s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (s *BulkOperationServiceOp) PostBulkQuery(query string) (graphql.ID, error)
 
 func (s *BulkOperationServiceOp) GetCurrentBulkQuery() (CurrentBulkOperation, error) {
 	q := queryCurrentBulkOperation{}
-	err := s.client.gql.Query(s.client.gql.GetContext(), &q, nil)
+	err := s.client.gql.Query(s.client.gql.Context(), &q, nil)
 	if err != nil {
 		return CurrentBulkOperation{}, err
 	}
@@ -150,10 +150,10 @@ func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(interval time.Duration)
 	}
 
 	for q.Status == "CREATED" || q.Status == "RUNNING" || q.Status == "CANCELING" {
-		span := sentry.StartSpan(s.client.gql.GetContext(), "time.sleep")
+		span := sentry.StartSpan(s.client.gql.Context(), "time.sleep")
 		span.Description = "interval"
 		time.Sleep(interval)
-		tracing.FinishSpan(span, s.client.gql.GetContext().Err())
+		tracing.FinishSpan(span, s.client.gql.Context().Err())
 
 		q, err = s.GetCurrentBulkQuery()
 		if err != nil {
@@ -179,7 +179,7 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery() (err error) {
 			"id": operationID,
 		}
 
-		err = s.client.gql.Mutate(s.client.gql.GetContext(), &m, vars)
+		err = s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 	var err error
 
 	// sentry tracing
-	span := sentry.StartSpan(s.client.gql.GetContext(), "shopify_graphql.bulk_query")
+	span := sentry.StartSpan(s.client.gql.Context(), "shopify_graphql.bulk_query")
 	span.Description = utils.GetDescriptionFromQuery(query)
 	span.SetTag("query", query)
 	defer func() {
@@ -241,7 +241,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 
 	filename := fmt.Sprintf("%s%s", rand.String(10), ".jsonl")
 	resultFile := filepath.Join(os.TempDir(), filename)
-	err = utils.DownloadFile(s.client.gql.GetContext(), resultFile, url)
+	err = utils.DownloadFile(s.client.gql.Context(), resultFile, url)
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 func (s *BulkOperationServiceOp) MarshalBulkResult(url string, out interface{}) error {
 	filename := fmt.Sprintf("%s%s", rand.String(10), ".jsonl")
 	resultFile := filepath.Join(os.TempDir(), filename)
-	err := utils.DownloadFile(s.client.gql.GetContext(), resultFile, url)
+	err := utils.DownloadFile(s.client.gql.Context(), resultFile, url)
 	if err != nil {
 		return err
 	}
