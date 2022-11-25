@@ -610,7 +610,7 @@ func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
 	`, productBulkQuery)
 
 	res := []*ProductBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
+	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
 		return []*ProductBulkResult{}, err
 	}
@@ -632,7 +632,7 @@ func (s *ProductServiceOp) TriggerListAll() (id graphql.ID, err error) {
 	`, productBulkQuery)
 
 	res := []*ProductBulkResult{}
-	id, err = s.client.BulkOperation.BulkQueryRunOnly(context.Background(), q, &res)
+	id, err = s.client.BulkOperation.BulkQueryRunOnly(q, &res)
 	return id, err
 }
 
@@ -652,7 +652,7 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	q = strings.ReplaceAll(q, "$query", query)
 
 	res := []*ProductBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
+	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
 		return []*ProductBulkResult{}, err
 	}

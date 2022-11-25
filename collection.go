@@ -285,7 +285,7 @@ func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	`, collectionBulkQuery)
 
 	res := []*CollectionBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(context.Background(), q, &res)
+	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
 		return []*CollectionBulkResult{}, err
 	}

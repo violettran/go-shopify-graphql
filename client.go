@@ -84,6 +84,25 @@ func (c *Client) GraphQLClient() *graphql.Client {
 	return c.gql
 }
 
+func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
+	c := &Client{gql: graphqlclient.NewClient(storeName, opts...)}
+
+	c.Product = &ProductServiceOp{client: c}
+	c.Variant = &VariantServiceOp{client: c}
+	c.Inventory = &InventoryServiceOp{client: c}
+	c.Cart = &CartServiceOp{client: c}
+	c.Billing = &BillingServiceOp{client: c}
+	c.Collection = &CollectionServiceOp{client: c}
+	c.Order = &OrderServiceOp{client: c}
+	c.Fulfillment = &FulfillmentServiceOp{client: c}
+	c.Location = &LocationServiceOp{client: c}
+	c.Metafield = &MetafieldServiceOp{client: c}
+	c.BulkOperation = &BulkOperationServiceOp{client: c}
+	c.Webhook = &WebhookServiceOp{client: c}
+
+	return c
+}
+
 func NewClientWithToken(apiKey string, storeName string) *Client {
 	c := &Client{gql: newShopifyGraphQLClientWithToken(apiKey, storeName)}
 

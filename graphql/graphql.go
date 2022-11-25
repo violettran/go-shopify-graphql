@@ -33,14 +33,15 @@ func NewClient(url string, httpClient *http.Client) *Client {
 	}
 }
 
-// Option is used to configure options
-type Option func(c *Client)
+func (c *Client) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
 
-// WithContext optionally sets custom context
-func WithContext(ctx context.Context) Option {
-	return func(c *Client) {
-		c.ctx = ctx
+func (c *Client) GetContext() context.Context {
+	if c.ctx != nil {
+		return c.ctx
 	}
+	return context.Background()
 }
 
 // QueryString executes a single GraphQL query request,

@@ -1,6 +1,7 @@
 package graphqlclient
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -21,6 +22,13 @@ var (
 
 // Option is used to configure options
 type Option func(t *transport)
+
+// WithContext optionally sets the API version if the passed string is valid
+func WithContext(ctx context.Context) Option {
+	return func(t *transport) {
+		t.ctx = ctx
+	}
+}
 
 // WithVersion optionally sets the API version if the passed string is valid
 func WithVersion(apiVersion string) Option {
@@ -65,6 +73,7 @@ func WithPrivateAppAuth(apiKey string, password string) Option {
 }
 
 type transport struct {
+	ctx                   context.Context
 	accessToken           string
 	storeFrontAccessToken string
 	apiKey                string
@@ -85,17 +94,22 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // NewClient creates a new client (in fact, just a simple wrapper for a graphql.Client)
 func NewClient(shopName string, opts ...Option) *graphql.Client {
-	transport := &transport{}
+	trans := &transport{}
 
 	for _, opt := range opts {
-		opt(transport)
+		opt(trans)
 	}
 
-	httpClient := &http.Client{Transport: transport}
+	httpClient := &http.Client{Transport: trans}
 
 	url := buildAPIEndpoint(shopName)
 
-	return graphql.NewClient(url, httpClient)
+	graphClient := graphql.NewClient(url, httpClient)
+	if trans.ctx != nil {
+		graphClient.SetContext(trans.ctx)
+	}
+
+	return graphClient
 }
 
 func buildAPIEndpoint(shopName string) string {
