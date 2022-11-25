@@ -39,9 +39,9 @@ func (c *Client) SetContext(ctx context.Context) {
 	c.ctx = ctx
 }
 
-// GetContext get a single context from graphql client
+// Context get a single context from graphql client
 // response the context from graphql client or new context
-func (c *Client) GetContext() context.Context {
+func (c *Client) Context() context.Context {
 	if c.ctx != nil {
 		return c.ctx
 	}
