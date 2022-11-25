@@ -33,10 +33,14 @@ func NewClient(url string, httpClient *http.Client) *Client {
 	}
 }
 
+// SetContext set a context for graphql client
+// set input ctx for graphql client
 func (c *Client) SetContext(ctx context.Context) {
 	c.ctx = ctx
 }
 
+// GetContext get a single context from graphql client
+// response the context from graphql client or new context
 func (c *Client) GetContext() context.Context {
 	if c.ctx != nil {
 		return c.ctx
