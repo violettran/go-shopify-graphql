@@ -10,17 +10,17 @@ import (
 )
 
 type CollectionService interface {
-	ListAll(ctx context.Context) ([]*CollectionBulkResult, error)
-	ListByCursor(ctx context.Context, first int, cursor string) (*CollectionsQueryResult, error)
-	ListWithFields(ctx context.Context, first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
+	ListAll() ([]*CollectionBulkResult, error)
+	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
 
-	Get(ctx context.Context, id graphql.ID) (*CollectionQueryResult, error)
-	GetSingleCollection(ctx context.Context, id graphql.ID, cursor string) (*CollectionQueryResult, error)
+	Get(id graphql.ID) (*CollectionQueryResult, error)
+	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
 
-	Create(ctx context.Context, collection *CollectionCreate) (graphql.ID, error)
-	CreateBulk(ctx context.Context, collections []*CollectionCreate) error
+	Create(collection *CollectionCreate) (graphql.ID, error)
+	CreateBulk(collections []*CollectionCreate) error
 
-	Update(ctx context.Context, collection *CollectionCreate) error
+	Update(collection *CollectionCreate) error
 }
 
 type CollectionServiceOp struct {
@@ -271,7 +271,7 @@ var collectionBulkQuery = `
 	}
 `
 
-func (s *CollectionServiceOp) ListAll(ctx context.Context) ([]*CollectionBulkResult, error) {
+func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	q := fmt.Sprintf(`
 		{
 			collections{
@@ -285,7 +285,7 @@ func (s *CollectionServiceOp) ListAll(ctx context.Context) ([]*CollectionBulkRes
 	`, collectionBulkQuery)
 
 	res := []*CollectionBulkResult{}
-	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
+	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
 		return []*CollectionBulkResult{}, err
 	}
@@ -293,7 +293,7 @@ func (s *CollectionServiceOp) ListAll(ctx context.Context) ([]*CollectionBulkRes
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListByCursor(ctx context.Context, first int, cursor string) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collections($first: Int!, $cursor: String) {
 			collections(first: $first, after: $cursor){
@@ -319,7 +319,7 @@ func (s *CollectionServiceOp) ListByCursor(ctx context.Context, first int, curso
 
 	out := CollectionsQueryResult{}
 
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func (s *CollectionServiceOp) ListByCursor(ctx context.Context, first int, curso
 	return &out, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cursor, query, fields string) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string) (*CollectionsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -356,7 +356,7 @@ func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cur
 	}
 	out := &CollectionsQueryResult{}
 
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -364,8 +364,8 @@ func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cur
 	return out, nil
 }
 
-func (s *CollectionServiceOp) Get(ctx context.Context, id graphql.ID) (*CollectionQueryResult, error) {
-	out, err := s.getPage(ctx, id, "")
+func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
+	out, err := s.getPage(id, "")
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +374,7 @@ func (s *CollectionServiceOp) Get(ctx context.Context, id graphql.ID) (*Collecti
 	hasNextPage := out.Products.PageInfo.HasNextPage
 	for hasNextPage && len(nextPageData.Products.Edges) > 0 {
 		cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
-		nextPageData, err := s.getPage(ctx, id, cursor)
+		nextPageData, err := s.getPage(id, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -385,7 +385,7 @@ func (s *CollectionServiceOp) Get(ctx context.Context, id graphql.ID) (*Collecti
 	return out, nil
 }
 
-func (s *CollectionServiceOp) getPage(ctx context.Context, id graphql.ID, cursor string) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*CollectionQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collection($id: ID!, $cursor: String) {
 			collection(id: $id){
@@ -404,7 +404,7 @@ func (s *CollectionServiceOp) getPage(ctx context.Context, id graphql.ID, cursor
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,7 @@ func (s *CollectionServiceOp) getPage(ctx context.Context, id graphql.ID, cursor
 	return out.Collection, nil
 }
 
-func (s *CollectionServiceOp) GetSingleCollection(ctx context.Context, id graphql.ID, cursor string) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -442,7 +442,7 @@ func (s *CollectionServiceOp) GetSingleCollection(ctx context.Context, id graphq
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -450,9 +450,9 @@ func (s *CollectionServiceOp) GetSingleCollection(ctx context.Context, id graphq
 	return out.Collection, nil
 }
 
-func (s *CollectionServiceOp) CreateBulk(ctx context.Context, collections []*CollectionCreate) error {
+func (s *CollectionServiceOp) CreateBulk(collections []*CollectionCreate) error {
 	for _, c := range collections {
-		_, err := s.client.Collection.Create(ctx, c)
+		_, err := s.client.Collection.Create(c)
 		if err != nil {
 			log.Warnf("Couldn't create collection (%v): %s", c, err)
 		}
@@ -461,14 +461,14 @@ func (s *CollectionServiceOp) CreateBulk(ctx context.Context, collections []*Col
 	return nil
 }
 
-func (s *CollectionServiceOp) Create(ctx context.Context, collection *CollectionCreate) (graphql.ID, error) {
+func (s *CollectionServiceOp) Create(collection *CollectionCreate) (graphql.ID, error) {
 	var id graphql.ID
 	m := mutationCollectionCreate{}
 
 	vars := map[string]interface{}{
 		"input": collection.CollectionInput,
 	}
-	err := s.client.gql.Mutate(ctx, &m, vars)
+	err := s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return id, err
 	}
@@ -481,13 +481,13 @@ func (s *CollectionServiceOp) Create(ctx context.Context, collection *Collection
 	return id, nil
 }
 
-func (s *CollectionServiceOp) Update(ctx context.Context, collection *CollectionCreate) error {
+func (s *CollectionServiceOp) Update(collection *CollectionCreate) error {
 	m := mutationCollectionUpdate{}
 
 	vars := map[string]interface{}{
 		"input": collection.CollectionInput,
 	}
-	err := s.client.gql.Mutate(ctx, &m, vars)
+	err := s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return err
 	}

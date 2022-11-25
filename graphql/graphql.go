@@ -18,6 +18,7 @@ import (
 type Client struct {
 	url        string // GraphQL server URL.
 	httpClient *http.Client
+	ctx        context.Context
 }
 
 // NewClient creates a GraphQL client targeting the specified GraphQL server URL.
@@ -32,6 +33,21 @@ func NewClient(url string, httpClient *http.Client) *Client {
 	}
 }
 
+// SetContext set a context for graphql client
+// set input ctx for graphql client
+func (c *Client) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
+
+// Context get a single context from graphql client
+// response the context from graphql client or new context
+func (c *Client) Context() context.Context {
+	if c.ctx != nil {
+		return c.ctx
+	}
+	return context.Background()
+}
+
 // QueryString executes a single GraphQL query request,
 // using the given raw query `q` and populating the response into the `v`.
 // `q` should be a correct GraphQL request string that corresponds to the GraphQL schema.
@@ -44,7 +60,6 @@ func (c *Client) QueryString(ctx context.Context, q string, variables map[string
 // q should be a pointer to struct that corresponds to the GraphQL schema.
 func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]interface{}) error {
 	query := constructQuery(q, variables)
-
 	return c.do(ctx, query, variables, q)
 }
 
@@ -59,6 +74,9 @@ func (c *Client) Mutate(ctx context.Context, m interface{}, variables map[string
 
 // do executes a single GraphQL operation.
 func (c *Client) do(ctx context.Context, query string, variables map[string]interface{}, v interface{}) error {
+	if c.ctx != nil {
+		ctx = c.ctx
+	}
 	var err error
 	in := struct {
 		Query     string                 `json:"query"`
