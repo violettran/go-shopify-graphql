@@ -209,7 +209,9 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 
 	// sentry tracing
 	span := sentry.StartSpan(s.client.gql.Context(), "shopify_graphql.bulk_query")
-	span.Description = utils.GetDescriptionFromQuery(query)
+	span.Data = map[string]interface{}{
+		"GraphQL Query": query,
+	}
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
