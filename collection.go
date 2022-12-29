@@ -3,6 +3,7 @@ package shopify
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
@@ -10,6 +11,7 @@ import (
 )
 
 type CollectionService interface {
+	List(query string) ([]*CollectionBulkResult, error)
 	ListAll() ([]*CollectionBulkResult, error)
 	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
 	ListWithFields(first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
@@ -270,6 +272,58 @@ var collectionBulkQuery = `
 		width
 	}
 `
+
+var collectionWithProductsBulkQuery = `
+	id
+	handle
+	title
+ 	description
+	templateSuffix
+	productsCount
+	seo{
+	  description
+	  title
+	}
+	image {
+		altText
+		height
+		id
+		src
+		width
+	}
+	products {
+		edges {
+		  node {
+			id
+		  }
+		  cursor
+		}
+	}
+`
+
+func (s *CollectionServiceOp) List(query string) ([]*CollectionBulkResult, error) {
+	q := fmt.Sprintf(`
+		{
+			collections(query: "$query"){
+				edges{
+					node{
+						%s
+					}
+				}
+			}
+		}
+	`, collectionWithProductsBulkQuery)
+
+	q = strings.ReplaceAll(q, "$query", query)
+
+	res := []*CollectionBulkResult{}
+	err := s.client.BulkOperation.BulkQuery(q, &res)
+	if err != nil {
+		return []*CollectionBulkResult{}, err
+	}
+
+	return res, nil
+}
 
 func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	q := fmt.Sprintf(`
