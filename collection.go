@@ -291,7 +291,7 @@ var collectionWithProductsBulkQuery = `
 		src
 		width
 	}
-	products(first: 250) {
+	products {
 		edges {
 		  node {
 			id
