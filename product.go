@@ -288,8 +288,9 @@ const productBaseQuery = `
   updatedAt
   tracksInventory
 	options{
-    id
+    	id
 		name
+		position
 		values
 	}
 	tags
