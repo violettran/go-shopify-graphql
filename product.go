@@ -126,9 +126,10 @@ type ProductShort struct {
 }
 
 type ProductOption struct {
-	ID     graphql.ID       `json:"id,omitempty"`
-	Name   graphql.String   `json:"name,omitempty"`
-	Values []graphql.String `json:"values,omitempty"`
+	ID       graphql.ID       `json:"id,omitempty"`
+	Name     graphql.String   `json:"name,omitempty"`
+	Position graphql.Int      `json:"position,omitempty"`
+	Values   []graphql.String `json:"values,omitempty"`
 }
 
 type ProductPriceRangeV2 struct {
