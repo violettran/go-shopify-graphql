@@ -336,15 +336,6 @@ var singleProductQueryVariant = fmt.Sprintf(`
         compareAtPrice
         price
         inventoryQuantity
-        inventoryItem {
-          id
-          legacyResourceId
-          unitCost {
-            amount
-            currencyCode
-          }
-          requiresShipping
-        }
 		image {
 			altText
 			height
@@ -382,15 +373,6 @@ var singleProductQueryVariantWithCursor = fmt.Sprintf(`
         compareAtPrice
         price
         inventoryQuantity
-        inventoryItem {
-          id
-          legacyResourceId
-          unitCost {
-            amount
-            currencyCode
-          }
-          requiresShipping
-        }
         barcode
         title
         inventoryPolicy
@@ -467,21 +449,12 @@ var productQuery = fmt.Sprintf(`
 				compareAtPrice
 				price
 				inventoryQuantity
-				inventoryItem{
-					id
-					legacyResourceId
-          unitCost {
-            amount
-            currencyCode
-          }
-          requiresShipping
-				}
-        barcode
-        title
-        inventoryPolicy
-        inventoryManagement
-        weightUnit
-        weight
+				barcode
+				title
+				inventoryPolicy
+				inventoryManagement
+				weightUnit
+				weight
 			}
 		}
 	}
@@ -578,21 +551,12 @@ var productBulkQuery = fmt.Sprintf(`
 				compareAtPrice
 				price
 				inventoryQuantity
-				inventoryItem{
-					id
-					legacyResourceId
-          unitCost {
-            amount
-            currencyCode
-          }
-          requiresShipping
-				}
-        barcode
-        title
-        inventoryPolicy
-        inventoryManagement
-        weightUnit
-        weight
+				barcode
+				title
+				inventoryPolicy
+				inventoryManagement
+				weightUnit
+				weight
 			}
 		}
 	}
