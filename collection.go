@@ -216,6 +216,7 @@ var collectionSingleQuery = `
   title
   handle
   description
+  descriptionHtml
   templateSuffix
   productsCount
   seo {
@@ -237,6 +238,7 @@ var collectionSingleQueryWithCursor = `
   title
   handle
   description
+  descriptionHtml
   templateSuffix
   productsCount
   seo {
@@ -258,6 +260,7 @@ var collectionBulkQuery = `
 	handle
 	title
  	description
+    descriptionHtml
 	templateSuffix
 	productsCount
 	seo{
@@ -278,6 +281,7 @@ var collectionWithProductsBulkQuery = `
 	handle
 	title
  	description
+    descriptionHtml
 	templateSuffix
 	productsCount
 	seo{
