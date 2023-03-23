@@ -53,7 +53,7 @@ type ProductBase struct {
 	SEO              SEOInput             `json:"seo,omitempty"`
 	TemplateSuffix   graphql.String       `json:"templateSuffix,omitempty"`
 	Status           graphql.String       `json:"status,omitempty"`
-	PublishedAt      time.Time            `json:"publishedAt,omitempty"`
+	PublishedAt      *time.Time           `json:"publishedAt,omitempty"`
 	UpdatedAt        time.Time            `json:"updatedAt,omitempty"`
 	TracksInventory  bool                 `json:"tracksInventory,omitempty"`
 }
