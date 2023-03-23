@@ -220,7 +220,7 @@ func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscri
 
 func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscription, err error) {
 	query := fmt.Sprintf(`{
-    webhookSubscriptions(first: 20) {
+    webhookSubscriptions(first: 50) {
       edges {
         node {
           id,
