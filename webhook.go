@@ -11,10 +11,10 @@ import (
 )
 
 type WebhookService interface {
-	NewWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload)
-	NewEventBridgeWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload)
+	NewWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload)
+	NewEventBridgeWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload)
 
-	GetAllWebhookSubcription() (output []*WebhookSubscription, err error)
+	ListWebhookSubscriptions(topics []WebhookSubscriptionTopic) (output []*WebhookSubscription, err error)
 	DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error)
 }
 
@@ -158,7 +158,29 @@ type WebhookTopicSubscription struct {
 	EventBridgeWebhookSubscriptionInput EventBridgeWebhookSubscriptionInput
 }
 
-func (w WebhookServiceOp) NewWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload) {
+const (
+	WebhookSubscriptionTopicProductsCreate      = WebhookSubscriptionTopic("PRODUCTS_CREATE")
+	WebhookSubscriptionTopicProductsUpdate      = WebhookSubscriptionTopic("PRODUCTS_UPDATE")
+	WebhookSubscriptionTopicProductsDelete      = WebhookSubscriptionTopic("PRODUCTS_DELETE")
+	WebhookSubscriptionTopicCollectionsCreate   = WebhookSubscriptionTopic("COLLECTIONS_CREATE")
+	WebhookSubscriptionTopicCollectionsUpdate   = WebhookSubscriptionTopic("COLLECTIONS_UPDATE")
+	WebhookSubscriptionTopicCollectionsDelete   = WebhookSubscriptionTopic("COLLECTIONS_DELETE")
+	WebhookSubscriptionTopicShopUpdate          = WebhookSubscriptionTopic("SHOP_UPDATE")
+	WebhookSubscriptionTopicAppUninstall        = WebhookSubscriptionTopic("APP_UNINSTALLED")
+	WebhookSubscriptionTopicThemesPublish       = WebhookSubscriptionTopic("THEMES_PUBLISH")
+	WebhookSubscriptionTopicThemesCreate        = WebhookSubscriptionTopic("THEMES_CREATE")
+	WebhookSubscriptionTopicThemesUpdate        = WebhookSubscriptionTopic("THEMES_UPDATE")
+	WebhookSubscriptionTopicCustomersUpdate     = WebhookSubscriptionTopic("CUSTOMERS_UPDATE")
+	WebhookSubscriptionTopicCustomersCreate     = WebhookSubscriptionTopic("CUSTOMERS_CREATE")
+	WebhookSubscriptionTopicCustomersDelete     = WebhookSubscriptionTopic("CUSTOMERS_DELETE")
+	WebhookSubscriptionTopicCustomerGroupCreate = WebhookSubscriptionTopic("CUSTOMER_GROUPS_CREATE")
+	WebhookSubscriptionTopicCustomerGroupUpdate = WebhookSubscriptionTopic("CUSTOMER_GROUPS_UPDATE")
+	WebhookSubscriptionTopicCartCreate          = WebhookSubscriptionTopic("CARTS_CREATE")
+	WebhookSubscriptionTopicCartUpdate          = WebhookSubscriptionTopic("CARTS_UPDATE")
+	WebhookSubscriptionTopicCheckoutUpdate      = WebhookSubscriptionTopic("CHECKOUTS_UPDATE")
+)
+
+func (w WebhookServiceOp) NewWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload) {
 	m := mutationWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic.WebhookSubscriptionTopic,
@@ -178,7 +200,7 @@ func (w WebhookServiceOp) NewWebhookSubcription(topic WebhookTopic, input Webhoo
 	return m.WebhookCreateResult
 }
 
-func (w WebhookServiceOp) NewEventBridgeWebhookSubcription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload) {
+func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload) {
 	m := mutationEventBridgeWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic.WebhookSubscriptionTopic,
@@ -218,10 +240,11 @@ func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscri
 	return m.WebhookDeleteResult, err
 }
 
-func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscription, err error) {
-	query := fmt.Sprintf(`{
-    webhookSubscriptions(first: 50) {
+func (w WebhookServiceOp) ListWebhookSubscriptions(topics []WebhookSubscriptionTopic) (output []*WebhookSubscription, err error) {
+	queryFormat := `query webhookSubscriptions($first: Int!, $topics: [WebhookSubscriptionTopic!]%s) {
+    webhookSubscriptions(first: $first, topics: $topics%s) {
       edges {
+        cursor
         node {
           id,
           topic,
@@ -242,22 +265,42 @@ func (w WebhookServiceOp) GetAllWebhookSubcription() (output []*WebhookSubscript
           updatedAt
         }
       }
+      pageInfo {
+        hasNextPage
+      }
     }
-  }
-  `)
+  }`
 
-	vars := map[string]interface{}{
-		// "first": 10,
+	var (
+		cursor graphql.String
+		vars   = map[string]interface{}{
+			"first":  200,
+			"topics": topics,
+		}
+	)
+	for {
+		var (
+			query string
+			out   QueryRoot
+		)
+		if cursor != "" {
+			vars["after"] = cursor
+			query = fmt.Sprintf(queryFormat, ", $after: String", ", after: $after")
+		} else {
+			query = fmt.Sprintf(queryFormat, "", "")
+		}
+		err = w.client.gql.QueryString(context.Background(), query, vars, &out)
+		if err != nil {
+			return
+		}
+		for _, wh := range out.WebhookSubscriptions.Edges {
+			output = append(output, wh.Node)
+		}
+		if out.WebhookSubscriptions.PageInfo.HasNextPage {
+			cursor = out.WebhookSubscriptions.Edges[len(out.WebhookSubscriptions.Edges)-1].Cursor
+		} else {
+			break
+		}
 	}
-
-	var op []*WebhookSubscription
-	var out QueryRoot
-	err = w.client.gql.QueryString(context.Background(), query, vars, &out)
-	if err != nil {
-		return output, err
-	}
-	for _, wh := range out.WebhookSubscriptions.Edges {
-		op = append(op, wh.Node)
-	}
-	return op, nil
+	return
 }
