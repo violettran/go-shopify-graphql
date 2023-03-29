@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -20,7 +19,7 @@ func CloseFile(f *os.File) {
 
 func ReadFile(file string) (data string, err error) {
 	var bytes []byte
-	bytes, err = ioutil.ReadFile(file)
+	bytes, err = os.ReadFile(file)
 	data = string(bytes)
 	return
 }
