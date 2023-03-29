@@ -494,30 +494,6 @@ var productBulkQuery = fmt.Sprintf(`
 			}
 		}
 	}
-  collections {
-    edges {
-      node {
-        id
-  		updatedAt
-        title
-        handle
-        description
-        templateSuffix
-        productsCount
-        seo{
-          description
-          title
-        }
-		image {
-			altText
-			height
-			id
-			src
-			width
-    	}
-      }
-    }
-  }
     images {
         edges {
             node {
