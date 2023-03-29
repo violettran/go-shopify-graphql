@@ -252,6 +252,9 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 		return err
 	}
 
+	// Clean up to avoid storage build up
+	_ = os.Remove(resultFile)
+
 	return nil
 }
 
@@ -267,6 +270,9 @@ func (s *BulkOperationServiceOp) MarshalBulkResult(url string, out interface{}) 
 	if err != nil {
 		return err
 	}
+
+	// Clean up to avoid storage build up
+	_ = os.Remove(resultFile)
 
 	return nil
 }
