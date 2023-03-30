@@ -42,14 +42,15 @@ type CollectionImage struct {
 }
 
 type CollectionBase struct {
-	ID             graphql.ID      `json:"id,omitempty"`
-	Handle         graphql.String  `json:"handle,omitempty"`
-	Title          graphql.String  `json:"title,omitempty"`
-	Description    graphql.String  `json:"description,omitempty"`
-	ProductsCount  graphql.Int     `json:"productsCount,omitempty"`
-	TemplateSuffix graphql.String  `json:"templateSuffix,omitempty"`
-	Seo            Seo             `json:"seo,omitempty"`
-	Image          CollectionImage `json:"image,omitempty"`
+	ID              graphql.ID      `json:"id,omitempty"`
+	Handle          graphql.String  `json:"handle,omitempty"`
+	Title           graphql.String  `json:"title,omitempty"`
+	Description     graphql.String  `json:"description,omitempty"`
+	DescriptionHTML graphql.String  `json:"descriptionHtml,omitempty"`
+	ProductsCount   graphql.Int     `json:"productsCount,omitempty"`
+	TemplateSuffix  graphql.String  `json:"templateSuffix,omitempty"`
+	Seo             Seo             `json:"seo,omitempty"`
+	Image           CollectionImage `json:"image,omitempty"`
 }
 
 type CollectionBulkResult struct {
