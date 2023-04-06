@@ -349,6 +349,7 @@ var singleProductQueryVariant = fmt.Sprintf(`
         inventoryManagement
         weightUnit
         weight
+		position
       }
       cursor
     }
@@ -379,6 +380,7 @@ var singleProductQueryVariantWithCursor = fmt.Sprintf(`
         inventoryManagement
         weightUnit
         weight
+		position
       }
       cursor
     }
@@ -455,6 +457,7 @@ var productQuery = fmt.Sprintf(`
 				inventoryManagement
 				weightUnit
 				weight
+				position
 			}
 		}
 	}
@@ -533,6 +536,7 @@ var productBulkQuery = fmt.Sprintf(`
 				inventoryManagement
 				weightUnit
 				weight
+				position
 			}
 		}
 	}
