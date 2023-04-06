@@ -29,6 +29,7 @@ type ProductVariant struct {
 	Barcode             graphql.String                   `json:"barcode,omitempty"`
 	Title               graphql.String                   `json:"title,omitempty"`
 	InventoryPolicy     ProductVariantInventoryPolicy    `json:"inventoryPolicy,omitempty"`
+	Position            graphql.Int                      `json:"position,omitempty"`
 	Weight              graphql.Float                    `json:"weight,omitempty"`
 	WeightUnit          WeightUnit                       `json:"weightUnit,omitempty"`
 	Product             *ProductBulkResult               `json:"product,omitempty"`

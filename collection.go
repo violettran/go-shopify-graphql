@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
@@ -43,6 +44,8 @@ type CollectionImage struct {
 
 type CollectionBase struct {
 	ID              graphql.ID      `json:"id,omitempty"`
+	CreatedAt       time.Time       `json:"createdAt,omitempty"`
+	UpdatedAt       time.Time       `json:"updatedAt,omitempty"`
 	Handle          graphql.String  `json:"handle,omitempty"`
 	Title           graphql.String  `json:"title,omitempty"`
 	Description     graphql.String  `json:"description,omitempty"`
@@ -215,6 +218,7 @@ var collectionQuery = `
 var collectionSingleQuery = `
   id
   title
+  updatedAt
   handle
   description
   descriptionHtml
@@ -238,6 +242,7 @@ var collectionSingleQueryWithCursor = `
   id
   title
   handle
+  updatedAt
   description
   descriptionHtml
   templateSuffix
@@ -260,6 +265,7 @@ var collectionBulkQuery = `
 	id
 	handle
 	title
+	updatedAt
  	description
     descriptionHtml
 	templateSuffix
@@ -281,6 +287,7 @@ var collectionWithProductsBulkQuery = `
 	id
 	handle
 	title
+	updatedAt
  	description
     descriptionHtml
 	templateSuffix
