@@ -3,6 +3,7 @@ package shopify
 import (
 	"context"
 	"fmt"
+	"github.com/gempages/go-shopify-graphql/utils"
 	"strings"
 	"time"
 
@@ -431,7 +432,14 @@ func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields st
 }
 
 func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
-	out, err := s.getPage(id, "")
+	var (
+		out *CollectionQueryResult
+		err error
+	)
+	err = utils.ExecWithRetries(10, func() error {
+		out, err = s.getPage(id, "")
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -440,20 +448,14 @@ func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error)
 	hasNextPage := out.Products.PageInfo.HasNextPage
 	for hasNextPage && len(nextPageData.Products.Edges) > 0 {
 		cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
-		retries := 0
 		// Shopify rate limit: 2 requests per sec
 		time.Sleep(500 * time.Millisecond)
-		for {
+		err = utils.ExecWithRetries(10, func() error {
 			nextPageData, err = s.getPage(id, cursor)
-			if err != nil {
-				retries++
-				if retries >= 3 {
-					return nil, fmt.Errorf("query products after %v tries: %w", retries, err)
-				}
-				time.Sleep(time.Duration(retries) * time.Second)
-				continue
-			}
-			break
+			return err
+		})
+		if err != nil {
+			return nil, err
 		}
 		out.Products.Edges = append(out.Products.Edges, nextPageData.Products.Edges...)
 		hasNextPage = nextPageData.Products.PageInfo.HasNextPage
