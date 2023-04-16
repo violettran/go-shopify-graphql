@@ -16,9 +16,9 @@ type CollectionService interface {
 	List(query string) ([]*CollectionBulkResult, error)
 	ListAll() ([]*CollectionBulkResult, error)
 	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
-	ListWithFields(first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string, retryCount int) (*CollectionsQueryResult, error)
 
-	Get(id graphql.ID) (*CollectionQueryResult, error)
+	Get(id graphql.ID, retryCount int) (*CollectionQueryResult, error)
 	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
 
 	Create(collection *CollectionCreate) (graphql.ID, error)
@@ -394,7 +394,7 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*Collectio
 	return &out, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string, retryCount int) (*CollectionsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -421,25 +421,24 @@ func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields st
 	if query != "" {
 		vars["query"] = query
 	}
-	out := &CollectionsQueryResult{}
+	out := CollectionsQueryResult{}
 
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	return &out, nil
 }
 
-func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) Get(id graphql.ID, retryCount int) (*CollectionQueryResult, error) {
 	var (
 		out *CollectionQueryResult
 		err error
 	)
-	err = utils.ExecWithRetries(10, func() error {
-		out, err = s.getPage(id, "")
-		return err
-	})
+	out, err = s.getPage(id, "", retryCount)
 	if err != nil {
 		return nil, err
 	}
@@ -450,10 +449,7 @@ func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error)
 		cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
 		// Shopify rate limit: 2 requests per sec
 		time.Sleep(500 * time.Millisecond)
-		err = utils.ExecWithRetries(10, func() error {
-			nextPageData, err = s.getPage(id, cursor)
-			return err
-		})
+		nextPageData, err = s.getPage(id, cursor, retryCount)
 		if err != nil {
 			return nil, err
 		}
@@ -464,7 +460,7 @@ func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error)
 	return out, nil
 }
 
-func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string, retryCount int) (*CollectionQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collection($id: ID!, $cursor: String) {
 			collection(id: $id){
@@ -483,7 +479,9 @@ func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*Collection
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
