@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -29,7 +31,8 @@ func ExecWithRetries(retryCount int, f func() error) error {
 	)
 	for {
 		err = f()
-		if IsInvalidTokenError(err) || IsInvalidStorefrontTokenError(err) || IsOperationUrlEmpty(err) || IsMaxCostLimitError(err) {
+		if IsInvalidTokenError(err) || IsInvalidStorefrontTokenError(err) || IsOperationUrlEmpty(err) ||
+			IsMaxCostLimitError(err) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		} else if err != nil {
 			retries++
