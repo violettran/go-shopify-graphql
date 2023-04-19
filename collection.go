@@ -3,9 +3,10 @@ package shopify
 import (
 	"context"
 	"fmt"
-	"github.com/gempages/go-shopify-graphql/utils"
 	"strings"
 	"time"
+
+	"github.com/gempages/go-shopify-graphql/utils"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 
@@ -15,7 +16,7 @@ import (
 type CollectionService interface {
 	List(query string) ([]*CollectionBulkResult, error)
 	ListAll() ([]*CollectionBulkResult, error)
-	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
+	ListByCursor(first int, cursor string, retryCount int) (*CollectionsQueryResult, error)
 	ListWithFields(first int, cursor string, query string, fields string, retryCount int) (*CollectionsQueryResult, error)
 
 	Get(id graphql.ID, retryCount int) (*CollectionQueryResult, error)
@@ -360,7 +361,7 @@ func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListByCursor(first int, cursor string, retryCount int) (*CollectionsQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collections($first: Int!, $cursor: String) {
 			collections(first: $first, after: $cursor){
@@ -385,8 +386,9 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*Collectio
 	}
 
 	out := CollectionsQueryResult{}
-
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
