@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -14,12 +15,12 @@ import (
 type ProductService interface {
 	List(query string) ([]*ProductBulkResult, error)
 	ListAll() ([]*ProductBulkResult, error)
-	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string, retryCount int) (*ProductsQueryResult, error)
 
-	Get(gid graphql.ID) (*ProductQueryResult, error)
-	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
+	Get(gid graphql.ID, retryCount int) (*ProductQueryResult, error)
+	GetSingleProductCollection(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
+	GetSingleProductVariant(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
+	GetSingleProduct(id graphql.ID, retryCount int) (*ProductQueryResult, error)
 	Create(product *ProductCreate) error
 	CreateBulk(products []*ProductCreate) error
 
@@ -606,8 +607,8 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	return res, nil
 }
 
-func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
-	out, err := s.getPage(id, "")
+func (s *ProductServiceOp) Get(id graphql.ID, retryCount int) (*ProductQueryResult, error) {
+	out, err := s.getPage(id, "", retryCount)
 	if err != nil {
 		return nil, err
 	}
@@ -616,7 +617,7 @@ func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
 	hasNextPage := out.ProductVariants.PageInfo.HasNextPage
 	for hasNextPage && len(nextPageData.ProductVariants.Edges) > 0 {
 		cursor := nextPageData.ProductVariants.Edges[len(nextPageData.ProductVariants.Edges)-1].Cursor
-		nextPageData, err := s.getPage(id, cursor)
+		nextPageData, err := s.getPage(id, cursor, retryCount)
 		if err != nil {
 			return nil, err
 		}
@@ -627,7 +628,7 @@ func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
 	return out, nil
 }
 
-func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) getPage(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!, $cursor: String) {
 			product(id: $id){
@@ -646,7 +647,9 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -654,7 +657,7 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -684,7 +687,9 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +697,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -722,7 +727,9 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -730,7 +737,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProduct(id graphql.ID, retryCount int) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!) {
 			product(id: $id){
@@ -748,8 +755,9 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -757,7 +765,7 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) (*ProductsQueryResult, error) {
+func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string, retryCount int) (*ProductsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -786,7 +794,9 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	}
 	out := &ProductsQueryResult{}
 
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
 	if err != nil {
 		return nil, err
 	}
