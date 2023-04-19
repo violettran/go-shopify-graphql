@@ -21,14 +21,14 @@ type ProductService interface {
 	GetSingleProductCollection(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
 	GetSingleProductVariant(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
 	GetSingleProduct(id graphql.ID, retryCount int) (*ProductQueryResult, error)
-	Create(product *ProductCreate) error
-	CreateBulk(products []*ProductCreate) error
+	Create(product *ProductCreate, retryCount int) error
+	CreateBulk(products []*ProductCreate, retryCount int) error
 
-	Update(product *ProductUpdate) error
-	UpdateBulk(products []*ProductUpdate) error
+	Update(product *ProductUpdate, retryCount int) error
+	UpdateBulk(products []*ProductUpdate, retryCount int) error
 
-	Delete(product *ProductDelete) error
-	DeleteBulk(products []*ProductDelete) error
+	Delete(product *ProductDelete, retryCount int) error
+	DeleteBulk(products []*ProductDelete, retryCount int) error
 	TriggerListAll() (id graphql.ID, err error)
 }
 
@@ -804,9 +804,9 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	return out, nil
 }
 
-func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
+func (s *ProductServiceOp) CreateBulk(products []*ProductCreate, retryCount int) error {
 	for _, p := range products {
-		err := s.Create(p)
+		err := s.Create(p, retryCount)
 		if err != nil {
 			log.Warnf("Couldn't create product (%v): %s", p, err)
 		}
@@ -815,14 +815,16 @@ func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Create(product *ProductCreate) error {
+func (s *ProductServiceOp) Create(product *ProductCreate, retryCount int) error {
 	m := mutationProductCreate{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 		"media": product.MediaInput,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.Mutate(context.Background(), &m, vars)
+	})
 	if err != nil {
 		return err
 	}
@@ -834,9 +836,9 @@ func (s *ProductServiceOp) Create(product *ProductCreate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate) error {
+func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate, retryCount int) error {
 	for _, p := range products {
-		err := s.Update(p)
+		err := s.Update(p, retryCount)
 		if err != nil {
 			log.Warnf("Couldn't update product (%v): %s", p, err)
 		}
@@ -845,13 +847,15 @@ func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Update(product *ProductUpdate) error {
+func (s *ProductServiceOp) Update(product *ProductUpdate, retryCount int) error {
 	m := mutationProductUpdate{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.Mutate(context.Background(), &m, vars)
+	})
 	if err != nil {
 		return err
 	}
@@ -863,9 +867,9 @@ func (s *ProductServiceOp) Update(product *ProductUpdate) error {
 	return nil
 }
 
-func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete) error {
+func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete, retryCount int) error {
 	for _, p := range products {
-		err := s.Delete(p)
+		err := s.Delete(p, retryCount)
 		if err != nil {
 			log.Warnf("Couldn't delete product (%v): %s", p, err)
 		}
@@ -874,13 +878,15 @@ func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete) error {
 	return nil
 }
 
-func (s *ProductServiceOp) Delete(product *ProductDelete) error {
+func (s *ProductServiceOp) Delete(product *ProductDelete, retryCount int) error {
 	m := mutationProductDelete{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := utils.ExecWithRetries(retryCount, func() error {
+		return s.client.gql.Mutate(context.Background(), &m, vars)
+	})
 	if err != nil {
 		return err
 	}
