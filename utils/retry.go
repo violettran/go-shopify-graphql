@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func IsOperationUrlEmpty(err error) bool {
+func IsOperationUrlEmptyError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Operation result URL is empty")
 }
 
@@ -24,6 +24,10 @@ func IsMaxCostLimitError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "max cost limit")
 }
 
+func IsPermissionError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "403 Forbidden")
+}
+
 func ExecWithRetries(retryCount int, f func() error) error {
 	var (
 		retries = 0
@@ -31,7 +35,7 @@ func ExecWithRetries(retryCount int, f func() error) error {
 	)
 	for {
 		err = f()
-		if IsInvalidTokenError(err) || IsInvalidStorefrontTokenError(err) || IsOperationUrlEmpty(err) ||
+		if IsInvalidTokenError(err) || IsInvalidStorefrontTokenError(err) || IsOperationUrlEmptyError(err) || IsPermissionError(err) ||
 			IsMaxCostLimitError(err) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		} else if err != nil {
