@@ -9,7 +9,7 @@ import (
 )
 
 func IsOperationUrlEmptyError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "Operation result URL is empty")
+	return err != nil && (strings.Contains(err.Error(), "Operation result URL is empty") || strings.Contains(err.Error(), "no Host in request URL"))
 }
 
 func IsInvalidTokenError(err error) bool {
