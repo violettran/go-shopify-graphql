@@ -31,6 +31,10 @@ func IsNoHostInRequestError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "no Host in request URL")
 }
 
+func IsThrottledError(err error) bool {
+	return err != nil && err.Error() == "Throttled"
+}
+
 func ExecWithRetries(retryCount int, f func() error) error {
 	var (
 		retries = 0
@@ -39,7 +43,7 @@ func ExecWithRetries(retryCount int, f func() error) error {
 	for {
 		err = f()
 		if err != nil {
-			if uerr, isURLErr := err.(*url.Error); isURLErr && (uerr.Timeout() || uerr.Temporary()) {
+			if uerr, isURLErr := err.(*url.Error); isURLErr && (uerr.Timeout() || uerr.Temporary()) || IsThrottledError(err) {
 				retries++
 				if retries > retryCount {
 					return fmt.Errorf("after %v tries: %w", retries, err)
