@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
@@ -111,11 +112,11 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("non-200 OK status code: %v body: %q", resp.Status, body)
+		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": string(body)})
 	}
 	var out struct {
 		Data   *json.RawMessage
-		Errors errors
+		Errors graphErrors
 		//Extensions interface{} // Unused.
 	}
 	err = json.NewDecoder(resp.Body).Decode(&out)
@@ -141,7 +142,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 // If returned via error interface, the slice is expected to contain at least 1 element.
 //
 // Specification: https://facebook.github.io/graphql/#sec-Errors.
-type errors []struct {
+type graphErrors []struct {
 	Message   string
 	Locations []struct {
 		Line   int
@@ -150,7 +151,7 @@ type errors []struct {
 }
 
 // Error implements error interface.
-func (e errors) Error() string {
+func (e graphErrors) Error() string {
 	return e[0].Message
 }
 
