@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	gpErrors "github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
@@ -111,7 +112,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("non-200 OK status code: %v body: %q", resp.Status, body)
+		return gpErrors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": body})
 	}
 	var out struct {
 		Data   *json.RawMessage
