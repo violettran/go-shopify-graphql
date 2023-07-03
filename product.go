@@ -66,6 +66,7 @@ type ProductBulkResult struct {
 	ProductVariants []ProductVariant `json:"variants,omitempty"`
 	Collections     []Collection     `json:"collections,omitempty"`
 	ProductImages   []ProductImage   `json:"images,omitempty"`
+	Media           []Media          `json:"media,omitempty"`
 }
 
 type ProductImage struct {
@@ -74,6 +75,25 @@ type ProductImage struct {
 	Src     graphql.String `json:"src,omitempty"`
 	Height  graphql.Int    `json:"height,omitempty"`
 	Width   graphql.Int    `json:"width,omitempty"`
+}
+
+type Media struct {
+	ID               graphql.ID       `json:"id,omitempty"`
+	MimeType         graphql.String   `json:"mimeType,omitempty"`
+	MediaContentType MediaContentType `json:"mediaContentType,omitempty"`
+	Alt              graphql.String   `json:"alt,omitempty"`
+	Image            *ProductImage    `json:"image,omitempty"`
+	Sources          interface{}      `json:"sources,omitEmpty"`
+	OriginalSource   *Source          `json:"originalSource,omitempty"`
+	EmbedUrl         graphql.String   `json:"embedUrl,omitempty"`
+	OriginUrl        graphql.String   `json:"originUrl,omitempty"`
+}
+
+type Source struct {
+	MimeType graphql.String `json:"mimeType,omitempty"`
+	Url      graphql.String `json:"url,omitempty"`
+	FileSize graphql.Int    `json:"filesize,omitempty"`
+	Format   graphql.String `json:"format,omitempty"`
 }
 
 // SEO information.
@@ -509,6 +529,50 @@ var productBulkQuery = fmt.Sprintf(`
             }
         }
     }
+	media {
+		edges {
+			node {
+				mediaContentType
+				...on MediaImage {
+					id
+					alt
+					mimeType
+					image {
+                		height
+                		src
+                		width
+					}
+				}
+				...on Model3d {
+					id
+					alt
+					originalSource {
+						url
+						format
+						filesize
+						mimeType
+					}
+				}
+				...on Video {
+					id
+					alt
+					duration
+					originalSource {
+						url
+						format
+						mimeType
+ 						height
+						width
+					}
+				}
+				...on ExternalVideo {
+					id
+					originUrl
+					embedUrl
+				}
+			}
+		}
+	}
 	variants{
 		edges{
 			node{
