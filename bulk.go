@@ -380,7 +380,8 @@ func parseBulkQueryResult(resultFile string, out interface{}) (err error) {
 		if parentID.LastError() == nil {
 			gid := json.Get(line, "id")
 			if gid.LastError() != nil {
-				return fmt.Errorf("Connection type must query `id` field")
+				// get connection without ID => skip step, continue to other connection
+				continue
 			}
 			childObjType, childrenFieldName, err := concludeObjectType(gid.ToString())
 			if err != nil {
@@ -487,6 +488,14 @@ func concludeObjectType(gid string) (reflect.Type, string, error) {
 		return reflect.TypeOf(Collection{}), fmt.Sprintf("%ss", resource), nil
 	case "ProductImage":
 		return reflect.TypeOf(ProductImage{}), fmt.Sprintf("%ss", resource), nil
+	case "MediaImage":
+		return reflect.TypeOf(Media{}), "Media", nil
+	case "Video":
+		return reflect.TypeOf(Media{}), "Media", nil
+	case "Model3d":
+		return reflect.TypeOf(Media{}), "Media", nil
+	case "ExternalVideo":
+		return reflect.TypeOf(Media{}), "Media", nil
 	default:
 		return reflect.TypeOf(nil), "", fmt.Errorf("`%s` not implemented type", resource)
 	}

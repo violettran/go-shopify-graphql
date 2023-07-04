@@ -18,6 +18,7 @@ type ProductService interface {
 	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
 
 	Get(gid graphql.ID) (*ProductQueryResult, error)
+	GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error)
 	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
@@ -66,6 +67,7 @@ type ProductBulkResult struct {
 	ProductVariants []ProductVariant `json:"variants,omitempty"`
 	Collections     []Collection     `json:"collections,omitempty"`
 	ProductImages   []ProductImage   `json:"images,omitempty"`
+	Media           []Media          `json:"media,omitempty"`
 }
 
 type ProductImage struct {
@@ -74,6 +76,25 @@ type ProductImage struct {
 	Src     graphql.String `json:"src,omitempty"`
 	Height  graphql.Int    `json:"height,omitempty"`
 	Width   graphql.Int    `json:"width,omitempty"`
+}
+
+type Media struct {
+	ID               graphql.ID       `json:"id,omitempty"`
+	MimeType         graphql.String   `json:"mimeType,omitempty"`
+	MediaContentType MediaContentType `json:"mediaContentType,omitempty"`
+	Alt              graphql.String   `json:"alt,omitempty"`
+	Image            *ProductImage    `json:"image,omitempty"`
+	Sources          interface{}      `json:"sources,omitEmpty"`
+	OriginalSource   *Source          `json:"originalSource,omitempty"`
+	EmbedUrl         graphql.String   `json:"embedUrl,omitempty"`
+	OriginUrl        graphql.String   `json:"originUrl,omitempty"`
+}
+
+type Source struct {
+	MimeType graphql.String `json:"mimeType,omitempty"`
+	Url      graphql.String `json:"url,omitempty"`
+	FileSize graphql.Int    `json:"filesize,omitempty"`
+	Format   graphql.String `json:"format,omitempty"`
 }
 
 // SEO information.
@@ -118,6 +139,13 @@ type ProductQueryResult struct {
 		} `json:"edges,omitempty"`
 		PageInfo PageInfo `json:"pageInfo,omitempty"`
 	} `json:"images,omitempty"`
+	Media struct {
+		Edges []struct {
+			Media  Media  `json:"node,omitempty"`
+			Cursor string `json:"cursor,omitempty"`
+		}
+		PageInfo PageInfo `json:"pageInfo,omitempty"`
+	} `json:"media,omitempty"`
 }
 
 type ProductShort struct {
@@ -509,6 +537,50 @@ var productBulkQuery = fmt.Sprintf(`
             }
         }
     }
+	media {
+		edges {
+			node {
+				mediaContentType
+				...on MediaImage {
+					id
+					alt
+					mimeType
+					image {
+                		height
+                		src
+                		width
+					}
+				}
+				...on Model3d {
+					id
+					alt
+					originalSource {
+						url
+						format
+						filesize
+						mimeType
+					}
+				}
+				...on Video {
+					id
+					alt
+					duration
+					originalSource {
+						url
+						format
+						mimeType
+ 						height
+						width
+					}
+				}
+				...on ExternalVideo {
+					id
+					originUrl
+					embedUrl
+				}
+			}
+		}
+	}
 	variants{
 		edges{
 			node{
@@ -642,6 +714,34 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	}
 	if cursor != "" {
 		vars["cursor"] = cursor
+	}
+
+	out := struct {
+		Product *ProductQueryResult `json:"product"`
+	}{}
+	err := utils.ExecWithRetries(s.client.retries, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Product, nil
+}
+
+func (s *ProductServiceOp) GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error) {
+	if fields == "" {
+		fields = `id`
+	}
+	q := fmt.Sprintf(`
+		query product($id: ID!) {
+		  product(id: $id){
+			%s
+		  }
+		}`, fields)
+
+	vars := map[string]interface{}{
+		"id": id,
 	}
 
 	out := struct {
