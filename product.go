@@ -18,6 +18,7 @@ type ProductService interface {
 	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
 
 	Get(gid graphql.ID) (*ProductQueryResult, error)
+	GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error)
 	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
 	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
@@ -138,6 +139,13 @@ type ProductQueryResult struct {
 		} `json:"edges,omitempty"`
 		PageInfo PageInfo `json:"pageInfo,omitempty"`
 	} `json:"images,omitempty"`
+	Media struct {
+		Edges []struct {
+			Media  Media  `json:"node,omitempty"`
+			Cursor string `json:"cursor,omitempty"`
+		}
+		PageInfo PageInfo `json:"pageInfo,omitempty"`
+	} `json:"media,omitempty"`
 }
 
 type ProductShort struct {
@@ -706,6 +714,34 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 	}
 	if cursor != "" {
 		vars["cursor"] = cursor
+	}
+
+	out := struct {
+		Product *ProductQueryResult `json:"product"`
+	}{}
+	err := utils.ExecWithRetries(s.client.retries, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Product, nil
+}
+
+func (s *ProductServiceOp) GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error) {
+	if fields == "" {
+		fields = `id`
+	}
+	q := fmt.Sprintf(`
+		query product($id: ID!) {
+		  product(id: $id){
+			%s
+		  }
+		}`, fields)
+
+	vars := map[string]interface{}{
+		"id": id,
 	}
 
 	out := struct {
