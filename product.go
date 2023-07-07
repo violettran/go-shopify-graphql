@@ -88,6 +88,11 @@ type Media struct {
 	OriginalSource   *Source          `json:"originalSource,omitempty"`
 	EmbedUrl         graphql.String   `json:"embedUrl,omitempty"`
 	OriginUrl        graphql.String   `json:"originUrl,omitempty"`
+	Preview          Preview          `json:"preview,omitempty"`
+}
+
+type Preview struct {
+	Image ProductImage `json:"image,omitempty"`
 }
 
 type Source struct {
@@ -560,6 +565,11 @@ var productBulkQuery = fmt.Sprintf(`
 						filesize
 						mimeType
 					}
+					preview {
+						image {
+							src
+						}
+					}
 				}
 				...on Video {
 					id
@@ -572,11 +582,21 @@ var productBulkQuery = fmt.Sprintf(`
  						height
 						width
 					}
+					preview {
+						image {
+							src
+						}
+					}
 				}
 				...on ExternalVideo {
 					id
 					originUrl
 					embedUrl
+					preview {
+						image {
+							src
+						}
+					}
 				}
 			}
 		}
