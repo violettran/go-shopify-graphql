@@ -110,47 +110,54 @@ type Seo struct {
 	Title graphql.String `json:"title,omitempty"`
 }
 
+type ProductImageEdges []struct {
+	Image  ProductImage `json:"node,omitempty"`
+	Cursor string       `json:"cursor,omitempty"`
+}
+
+type ProductImageQueryPage struct {
+	Edges    ProductImageEdges `json:"edges,omitempty"`
+	PageInfo PageInfo          `json:"pageInfo,omitempty"`
+}
+
+type ProductImagesQueryResult struct {
+	Images ProductImageQueryPage `json:"images,omitempty"`
+}
+
+type MediaEdges []struct {
+	Media  Media  `json:"node,omitempty"`
+	Cursor string `json:"cursor,omitempty"`
+}
+
+type MediaQueryPage struct {
+	Edges    MediaEdges `json:"edges,omitempty"`
+	PageInfo PageInfo   `json:"pageInfo,omitempty"`
+}
+
+type MediaQueryResult struct {
+	Media MediaQueryPage `json:"media,omitempty"`
+}
+
+type ProductEdges []struct {
+	Product ProductQueryResult `json:"node,omitempty"`
+	Cursor  string             `json:"cursor,omitempty"`
+}
+
+type ProductsPage struct {
+	Edges    ProductEdges `json:"edges,omitempty"`
+	PageInfo PageInfo     `json:"pageInfo,omitempty"`
+}
+
 type ProductsQueryResult struct {
-	Products struct {
-		Edges []struct {
-			Product ProductQueryResult `json:"node,omitempty"`
-			Cursor  string             `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"products,omitempty"`
+	Products ProductsPage `json:"products,omitempty"`
 }
 
 type ProductQueryResult struct {
 	ProductBase
-
-	ProductVariants struct {
-		Edges []struct {
-			Variant ProductVariant `json:"node,omitempty"`
-			Cursor  string         `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"variants,omitempty"`
-	Collections struct {
-		Edges []struct {
-			Collection Collection `json:"node,omitempty"`
-			Cursor     string     `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"collections,omitempty"`
-	Images struct {
-		Edges []struct {
-			Collection Collection `json:"node,omitempty"`
-			Cursor     string     `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"images,omitempty"`
-	Media struct {
-		Edges []struct {
-			Media  Media  `json:"node,omitempty"`
-			Cursor string `json:"cursor,omitempty"`
-		}
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"media,omitempty"`
+	ProductVariantsQueryResult
+	CollectionsQueryResult
+	ProductImagesQueryResult
+	MediaQueryResult
 }
 
 type ProductShort struct {

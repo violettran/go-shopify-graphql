@@ -64,26 +64,37 @@ type CollectionBulkResult struct {
 	Products []ProductBulkResult `json:"products,omitempty"`
 }
 
+type CollectionEdges []struct {
+	Collection CollectionQueryResult `json:"node,omitempty"`
+	Cursor     string                `json:"cursor,omitempty"`
+}
+
+type CollectionQueryPage struct {
+	Edges    CollectionEdges `json:"edges,omitempty"`
+	PageInfo PageInfo        `json:"pageInfo,omitempty"`
+}
+
 type CollectionsQueryResult struct {
-	Collections struct {
-		Edges []struct {
-			Collection CollectionQueryResult `json:"node,omitempty"`
-			Cursor     string                `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"collections,omitempty"`
+	Collections CollectionQueryPage `json:"collections,omitempty"`
+}
+
+type CollectionProductEdges []struct {
+	Product ProductBulkResult `json:"node,omitempty"`
+	Cursor  string            `json:"cursor,omitempty"`
+}
+
+type CollectionProductQueryPage struct {
+	Edges    CollectionProductEdges `json:"edges,omitempty"`
+	PageInfo PageInfo               `json:"pageInfo,omitempty"`
+}
+
+type CollectionProductsQueryResult struct {
+	Products CollectionProductQueryPage `json:"products,omitempty"`
 }
 
 type CollectionQueryResult struct {
 	CollectionBase
-
-	Products struct {
-		Edges []struct {
-			Product ProductBulkResult `json:"node,omitempty"`
-			Cursor  string            `json:"cursor,omitempty"`
-		} `json:"edges,omitempty"`
-		PageInfo PageInfo `json:"pageInfo,omitempty"`
-	} `json:"products,omitempty"`
+	CollectionProductsQueryResult
 }
 
 type CollectionCreate struct {

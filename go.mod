@@ -1,6 +1,6 @@
 module github.com/gempages/go-shopify-graphql
 
-go 1.19
+go 1.20
 
 require (
 	github.com/gempages/go-helper v1.1.1
