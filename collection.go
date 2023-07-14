@@ -64,28 +64,28 @@ type CollectionBulkResult struct {
 	Products []ProductBulkResult `json:"products,omitempty"`
 }
 
-type CollectionEdges []struct {
+type CollectionEdge struct {
 	Collection CollectionQueryResult `json:"node,omitempty"`
 	Cursor     string                `json:"cursor,omitempty"`
 }
 
 type CollectionQueryPage struct {
-	Edges    CollectionEdges `json:"edges,omitempty"`
-	PageInfo PageInfo        `json:"pageInfo,omitempty"`
+	Edges    []CollectionEdge `json:"edges,omitempty"`
+	PageInfo PageInfo         `json:"pageInfo,omitempty"`
 }
 
 type CollectionsQueryResult struct {
 	Collections CollectionQueryPage `json:"collections,omitempty"`
 }
 
-type CollectionProductEdges []struct {
+type CollectionProductEdge struct {
 	Product ProductBulkResult `json:"node,omitempty"`
 	Cursor  string            `json:"cursor,omitempty"`
 }
 
 type CollectionProductQueryPage struct {
-	Edges    CollectionProductEdges `json:"edges,omitempty"`
-	PageInfo PageInfo               `json:"pageInfo,omitempty"`
+	Edges    []CollectionProductEdge `json:"edges,omitempty"`
+	PageInfo PageInfo                `json:"pageInfo,omitempty"`
 }
 
 type CollectionProductsQueryResult struct {

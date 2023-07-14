@@ -110,42 +110,42 @@ type Seo struct {
 	Title graphql.String `json:"title,omitempty"`
 }
 
-type ProductImageEdges []struct {
+type ProductImageEdge struct {
 	Image  ProductImage `json:"node,omitempty"`
 	Cursor string       `json:"cursor,omitempty"`
 }
 
 type ProductImageQueryPage struct {
-	Edges    ProductImageEdges `json:"edges,omitempty"`
-	PageInfo PageInfo          `json:"pageInfo,omitempty"`
+	Edges    []ProductImageEdge `json:"edges,omitempty"`
+	PageInfo PageInfo           `json:"pageInfo,omitempty"`
 }
 
 type ProductImagesQueryResult struct {
 	Images ProductImageQueryPage `json:"images,omitempty"`
 }
 
-type MediaEdges []struct {
+type MediaEdge struct {
 	Media  Media  `json:"node,omitempty"`
 	Cursor string `json:"cursor,omitempty"`
 }
 
 type MediaQueryPage struct {
-	Edges    MediaEdges `json:"edges,omitempty"`
-	PageInfo PageInfo   `json:"pageInfo,omitempty"`
+	Edges    []MediaEdge `json:"edges,omitempty"`
+	PageInfo PageInfo    `json:"pageInfo,omitempty"`
 }
 
 type MediaQueryResult struct {
 	Media MediaQueryPage `json:"media,omitempty"`
 }
 
-type ProductEdges []struct {
+type ProductEdge struct {
 	Product ProductQueryResult `json:"node,omitempty"`
 	Cursor  string             `json:"cursor,omitempty"`
 }
 
 type ProductsPage struct {
-	Edges    ProductEdges `json:"edges,omitempty"`
-	PageInfo PageInfo     `json:"pageInfo,omitempty"`
+	Edges    []ProductEdge `json:"edges,omitempty"`
+	PageInfo PageInfo      `json:"pageInfo,omitempty"`
 }
 
 type ProductsQueryResult struct {
