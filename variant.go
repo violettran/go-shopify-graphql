@@ -51,14 +51,14 @@ type ProductVariantPricePair struct {
 	Price          Money `json:"price,omitempty"`
 }
 
-type ProductVariantEdges []struct {
+type ProductVariantEdge struct {
 	Variant ProductVariant `json:"node,omitempty"`
 	Cursor  string         `json:"cursor,omitempty"`
 }
 
 type ProductVariantQueryPage struct {
-	Edges    ProductVariantEdges `json:"edges,omitempty"`
-	PageInfo PageInfo            `json:"pageInfo,omitempty"`
+	Edges    []ProductVariantEdge `json:"edges,omitempty"`
+	PageInfo PageInfo             `json:"pageInfo,omitempty"`
 }
 
 type ProductVariantsQueryResult struct {
