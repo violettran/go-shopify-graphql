@@ -69,13 +69,13 @@ type CollectionEdge struct {
 	Cursor     string                `json:"cursor,omitempty"`
 }
 
-type CollectionQueryPage struct {
+type CollectionConnection struct {
 	Edges    []CollectionEdge `json:"edges,omitempty"`
 	PageInfo PageInfo         `json:"pageInfo,omitempty"`
 }
 
 type CollectionsQueryResult struct {
-	Collections CollectionQueryPage `json:"collections,omitempty"`
+	Collections CollectionConnection `json:"collections,omitempty"`
 }
 
 type CollectionProductEdge struct {
@@ -83,13 +83,13 @@ type CollectionProductEdge struct {
 	Cursor  string            `json:"cursor,omitempty"`
 }
 
-type CollectionProductQueryPage struct {
+type CollectionProductConnection struct {
 	Edges    []CollectionProductEdge `json:"edges,omitempty"`
 	PageInfo PageInfo                `json:"pageInfo,omitempty"`
 }
 
 type CollectionProductsQueryResult struct {
-	Products CollectionProductQueryPage `json:"products,omitempty"`
+	Products CollectionProductConnection `json:"products,omitempty"`
 }
 
 type CollectionQueryResult struct {

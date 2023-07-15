@@ -115,13 +115,13 @@ type ProductImageEdge struct {
 	Cursor string       `json:"cursor,omitempty"`
 }
 
-type ProductImageQueryPage struct {
+type ProductImageConnection struct {
 	Edges    []ProductImageEdge `json:"edges,omitempty"`
 	PageInfo PageInfo           `json:"pageInfo,omitempty"`
 }
 
 type ProductImagesQueryResult struct {
-	Images ProductImageQueryPage `json:"images,omitempty"`
+	Images ProductImageConnection `json:"images,omitempty"`
 }
 
 type MediaEdge struct {
@@ -129,13 +129,13 @@ type MediaEdge struct {
 	Cursor string `json:"cursor,omitempty"`
 }
 
-type MediaQueryPage struct {
+type MediaQueryConnection struct {
 	Edges    []MediaEdge `json:"edges,omitempty"`
 	PageInfo PageInfo    `json:"pageInfo,omitempty"`
 }
 
 type MediaQueryResult struct {
-	Media MediaQueryPage `json:"media,omitempty"`
+	Media MediaQueryConnection `json:"media,omitempty"`
 }
 
 type ProductEdge struct {
@@ -143,13 +143,13 @@ type ProductEdge struct {
 	Cursor  string             `json:"cursor,omitempty"`
 }
 
-type ProductsPage struct {
+type ProductConnection struct {
 	Edges    []ProductEdge `json:"edges,omitempty"`
 	PageInfo PageInfo      `json:"pageInfo,omitempty"`
 }
 
 type ProductsQueryResult struct {
-	Products ProductsPage `json:"products,omitempty"`
+	Products ProductConnection `json:"products,omitempty"`
 }
 
 type ProductQueryResult struct {
