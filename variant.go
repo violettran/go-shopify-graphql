@@ -56,13 +56,13 @@ type ProductVariantEdge struct {
 	Cursor  string         `json:"cursor,omitempty"`
 }
 
-type ProductVariantQueryPage struct {
+type ProductVariantConnection struct {
 	Edges    []ProductVariantEdge `json:"edges,omitempty"`
 	PageInfo PageInfo             `json:"pageInfo,omitempty"`
 }
 
 type ProductVariantsQueryResult struct {
-	ProductVariants ProductVariantQueryPage `json:"variants,omitempty"`
+	ProductVariants ProductVariantConnection `json:"variants,omitempty"`
 }
 
 type ProductVariantUpdate struct {
