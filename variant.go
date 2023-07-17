@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
+	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
 )
 
 type VariantService interface {
-	Update(variant *ProductVariantUpdate) error
+	Update(variant model.ProductVariantInput) error
 }
 
 type VariantServiceOp struct {
@@ -44,29 +45,6 @@ type ProductVariant struct {
 type SelectedOption struct {
 	Name  graphql.String `json:"name,omitempty"`
 	Value graphql.String `json:"value,omitempty"`
-}
-
-type ProductVariantPricePair struct {
-	CompareAtPrice Money `json:"compareAtPrice,omitempty"`
-	Price          Money `json:"price,omitempty"`
-}
-
-type ProductVariantEdge struct {
-	Variant ProductVariant `json:"node,omitempty"`
-	Cursor  string         `json:"cursor,omitempty"`
-}
-
-type ProductVariantConnection struct {
-	Edges    []ProductVariantEdge `json:"edges,omitempty"`
-	PageInfo PageInfo             `json:"pageInfo,omitempty"`
-}
-
-type ProductVariantsQueryResult struct {
-	ProductVariants ProductVariantConnection `json:"variants,omitempty"`
-}
-
-type ProductVariantUpdate struct {
-	ProductVariantInput ProductVariantInput
 }
 
 type ProductVariantInput struct {
@@ -169,11 +147,11 @@ type productVariantUpdateResult struct {
 	UserErrors []UserErrors
 }
 
-func (s *VariantServiceOp) Update(variant *ProductVariantUpdate) error {
+func (s *VariantServiceOp) Update(variant model.ProductVariantInput) error {
 	m := mutationProductVariantUpdate{}
 
 	vars := map[string]interface{}{
-		"input": variant.ProductVariantInput,
+		"input": variant,
 	}
 	err := s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {

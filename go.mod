@@ -5,11 +5,13 @@ go 1.20
 require (
 	github.com/gempages/go-helper v1.1.1
 	github.com/getsentry/sentry-go v0.20.0
+	github.com/goccy/go-json v0.10.2
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
+	github.com/r0busta/go-shopify-graphql-model/v3 v3.0.1
 	github.com/sirupsen/logrus v1.9.0
-	github.com/vektah/gqlparser/v2 v2.5.1
-	golang.org/x/net v0.9.0
+	github.com/vektah/gqlparser/v2 v2.5.7
+	golang.org/x/net v0.12.0
 	gopkg.in/guregu/null.v4 v4.0.0
 )
 
@@ -22,8 +24,8 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

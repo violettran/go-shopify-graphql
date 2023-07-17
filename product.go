@@ -1,7 +1,6 @@
 package shopify
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -9,19 +8,20 @@ import (
 	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/gempages/go-shopify-graphql/utils"
 
+	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
 	log "github.com/sirupsen/logrus"
 )
 
 type ProductService interface {
-	List(query string) ([]*ProductBulkResult, error)
-	ListAll() ([]*ProductBulkResult, error)
-	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
+	List(query string) ([]*model.Product, error)
+	ListAll() ([]*model.Product, error)
+	ListWithFields(first int, cursor string, query string, fields string) ([]*model.Product, error)
 
-	Get(gid graphql.ID) (*ProductQueryResult, error)
-	GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error)
-	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
-	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
+	Get(gid graphql.ID) (*model.Product, error)
+	GetWithFields(id graphql.ID, fields string) (*model.Product, error)
+	GetSingleProductCollection(id graphql.ID, cursor string) (*model.Product, error)
+	GetSingleProductVariant(id graphql.ID, cursor string) (*model.Product, error)
+	GetSingleProduct(id graphql.ID) (*model.Product, error)
 	Create(product *ProductCreate) error
 	CreateBulk(products []*ProductCreate) error
 
@@ -30,12 +30,13 @@ type ProductService interface {
 
 	Delete(product *ProductDelete) error
 	DeleteBulk(products []*ProductDelete) error
-	TriggerListAll() (id graphql.ID, err error)
 }
 
 type ProductServiceOp struct {
 	client *Client
 }
+
+var _ ProductService = &ProductServiceOp{}
 
 type ProductBase struct {
 	ID               graphql.ID           `json:"id,omitempty"`
@@ -108,56 +109,6 @@ type Seo struct {
 	Description graphql.String `json:"description,omitempty"`
 	// SEO Title.
 	Title graphql.String `json:"title,omitempty"`
-}
-
-type ProductImageEdge struct {
-	Image  ProductImage `json:"node,omitempty"`
-	Cursor string       `json:"cursor,omitempty"`
-}
-
-type ProductImageConnection struct {
-	Edges    []ProductImageEdge `json:"edges,omitempty"`
-	PageInfo PageInfo           `json:"pageInfo,omitempty"`
-}
-
-type ProductImagesQueryResult struct {
-	Images ProductImageConnection `json:"images,omitempty"`
-}
-
-type MediaEdge struct {
-	Media  Media  `json:"node,omitempty"`
-	Cursor string `json:"cursor,omitempty"`
-}
-
-type MediaQueryConnection struct {
-	Edges    []MediaEdge `json:"edges,omitempty"`
-	PageInfo PageInfo    `json:"pageInfo,omitempty"`
-}
-
-type MediaQueryResult struct {
-	Media MediaQueryConnection `json:"media,omitempty"`
-}
-
-type ProductEdge struct {
-	Product ProductQueryResult `json:"node,omitempty"`
-	Cursor  string             `json:"cursor,omitempty"`
-}
-
-type ProductConnection struct {
-	Edges    []ProductEdge `json:"edges,omitempty"`
-	PageInfo PageInfo      `json:"pageInfo,omitempty"`
-}
-
-type ProductsQueryResult struct {
-	Products ProductConnection `json:"products,omitempty"`
-}
-
-type ProductQueryResult struct {
-	ProductBase
-	ProductVariantsQueryResult
-	CollectionsQueryResult
-	ProductImagesQueryResult
-	MediaQueryResult
 }
 
 type ProductShort struct {
@@ -642,7 +593,7 @@ var productBulkQuery = fmt.Sprintf(`
 	}
 `, productBaseQuery)
 
-func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
+func (s *ProductServiceOp) ListAll() ([]*model.Product, error) {
 	q := fmt.Sprintf(`
 		{
 			products{
@@ -655,34 +606,16 @@ func (s *ProductServiceOp) ListAll() ([]*ProductBulkResult, error) {
 		}
 	`, productBulkQuery)
 
-	res := []*ProductBulkResult{}
+	res := []*model.Product{}
 	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
-		return []*ProductBulkResult{}, err
+		return nil, err
 	}
 
 	return res, nil
 }
 
-func (s *ProductServiceOp) TriggerListAll() (id graphql.ID, err error) {
-	q := fmt.Sprintf(`
-		{
-			products{
-				edges{
-					node{
-						%s
-					}
-				}
-			}
-		}
-	`, productBulkQuery)
-
-	res := []*ProductBulkResult{}
-	id, err = s.client.BulkOperation.BulkQueryRunOnly(q, &res)
-	return id, err
-}
-
-func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
+func (s *ProductServiceOp) List(query string) ([]*model.Product, error) {
 	q := fmt.Sprintf(`
 		{
 			products(query: "$query"){
@@ -697,37 +630,37 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 
 	q = strings.ReplaceAll(q, "$query", query)
 
-	res := []*ProductBulkResult{}
+	res := []*model.Product{}
 	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
-		return []*ProductBulkResult{}, err
+		return nil, err
 	}
 
 	return res, nil
 }
 
-func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) Get(id graphql.ID) (*model.Product, error) {
 	out, err := s.getPage(id, "")
 	if err != nil {
 		return nil, err
 	}
 
 	nextPageData := out
-	hasNextPage := out.ProductVariants.PageInfo.HasNextPage
-	for hasNextPage && len(nextPageData.ProductVariants.Edges) > 0 {
-		cursor := nextPageData.ProductVariants.Edges[len(nextPageData.ProductVariants.Edges)-1].Cursor
+	hasNextPage := out.Variants.PageInfo.HasNextPage
+	for hasNextPage && len(nextPageData.Variants.Edges) > 0 {
+		cursor := nextPageData.Variants.Edges[len(nextPageData.Variants.Edges)-1].Cursor
 		nextPageData, err := s.getPage(id, cursor)
 		if err != nil {
 			return nil, err
 		}
-		out.ProductVariants.Edges = append(out.ProductVariants.Edges, nextPageData.ProductVariants.Edges...)
-		hasNextPage = nextPageData.ProductVariants.PageInfo.HasNextPage
+		out.Variants.Edges = append(out.Variants.Edges, nextPageData.Variants.Edges...)
+		hasNextPage = nextPageData.Variants.PageInfo.HasNextPage
 	}
 
 	return out, nil
 }
 
-func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*model.Product, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!, $cursor: String) {
 			product(id: $id){
@@ -743,20 +676,18 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryR
 		vars["cursor"] = cursor
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	out := model.Product{}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return &out, nil
 }
 
-func (s *ProductServiceOp) GetWithFields(id graphql.ID, fields string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetWithFields(id graphql.ID, fields string) (*model.Product, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -771,20 +702,18 @@ func (s *ProductServiceOp) GetWithFields(id graphql.ID, fields string) (*Product
 		"id": id,
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	out := model.Product{}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return &out, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string) (*model.Product, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -811,20 +740,18 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 		vars["cursor"] = cursor
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	out := model.Product{}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return &out, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string) (*model.Product, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -851,20 +778,18 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string)
 		vars["cursor"] = cursor
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	out := model.Product{}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return &out, nil
 }
 
-func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*model.Product, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!) {
 			product(id: $id){
@@ -879,20 +804,18 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult,
 		"id": id,
 	}
 
-	out := struct {
-		Product *ProductQueryResult `json:"product"`
-	}{}
+	out := model.Product{}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Product, nil
+	return &out, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) (*ProductsQueryResult, error) {
+func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) ([]*model.Product, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -919,10 +842,10 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	if query != "" {
 		vars["query"] = query
 	}
-	out := &ProductsQueryResult{}
+	out := []*model.Product{}
 
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+		return s.client.gql.QueryString(s.client.gql.Context(), q, vars, &out)
 	})
 	if err != nil {
 		return nil, err
@@ -950,7 +873,7 @@ func (s *ProductServiceOp) Create(product *ProductCreate) error {
 		"media": product.MediaInput,
 	}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
+		return s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
 	})
 	if err != nil {
 		return err
@@ -981,7 +904,7 @@ func (s *ProductServiceOp) Update(product *ProductUpdate) error {
 		"input": product.ProductInput,
 	}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
+		return s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
 	})
 	if err != nil {
 		return err
@@ -1012,7 +935,7 @@ func (s *ProductServiceOp) Delete(product *ProductDelete) error {
 		"input": product.ProductInput,
 	}
 	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
+		return s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
 	})
 	if err != nil {
 		return err
