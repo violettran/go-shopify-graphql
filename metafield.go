@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
+	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -44,7 +45,7 @@ type Metafield struct {
 	// The value of a metafield.
 	Value graphql.String `json:"value,omitempty"`
 	// Represents the metafield value type.
-	Type MetafieldValueType `json:"type,omitempty"`
+	Type model.MetafieldValueType `json:"type,omitempty"`
 }
 
 type MetafieldDeleteInput struct {
