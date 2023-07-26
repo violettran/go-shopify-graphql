@@ -3,6 +3,8 @@ package shopify
 import (
 	"context"
 	"fmt"
+
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
@@ -319,7 +321,7 @@ type CartLine struct {
 	DiscountAllocations   []CartDiscountAllocation `json:"discountAllocations,omitempty"`
 	EstimatedCost         CartLineEstimatedCost    `json:"estimatedCost,omitempty"`
 	ID                    graphql.String           `json:"id,omitempty"`
-	Merchandise           Merchandise              `json:"merchandise,omitempty"`
+	Merchandise           model.ProductVariant     `json:"merchandise,omitempty"`
 	Quantity              graphql.Int              `json:"quantity,omitempty"`
 	SellingPlanAllocation SellingPlanAllocation    `json:"sellingPlanAllocation,omitempty"`
 }
@@ -331,10 +333,6 @@ type CartDiscountAllocation struct {
 type CartLineEstimatedCost struct {
 	SubtotalAmount MoneyV2 `json:"subtotalAmount,omitempty"`
 	TotalAmount    MoneyV2 `json:"totalAmount,omitempty"`
-}
-
-type Merchandise struct {
-	ProductVariant
 }
 
 type SellingPlanAllocation struct {
@@ -364,7 +362,7 @@ type SellingPlanOption struct {
 }
 
 type SellingPlanPriceAdjustment struct {
-	//adjustmentValue
+	// adjustmentValue
 	OrderCount graphql.Int `json:"orderCount,omitempty"`
 }
 

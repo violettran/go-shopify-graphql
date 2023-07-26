@@ -16,7 +16,7 @@ func IsInvalidTokenError(err error) bool {
 }
 
 func IsInvalidStorefrontTokenError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "401 Unauthorized body")
+	return err != nil && strings.Contains(err.Error(), "401 Unauthorized")
 }
 
 func IsMaxCostLimitError(err error) bool {

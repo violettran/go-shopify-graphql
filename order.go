@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
@@ -114,9 +115,9 @@ type LineItemProduct struct {
 }
 
 type LineItemVariant struct {
-	ID               graphql.ID       `json:"id,omitempty"`
-	LegacyResourceID graphql.String   `json:"legacyResourceId,omitempty"`
-	SelectedOptions  []SelectedOption `json:"selectedOptions,omitempty"`
+	ID               graphql.ID             `json:"id,omitempty"`
+	LegacyResourceID graphql.String         `json:"legacyResourceId,omitempty"`
+	SelectedOptions  []model.SelectedOption `json:"selectedOptions,omitempty"`
 }
 
 type FulfillmentOrder struct {

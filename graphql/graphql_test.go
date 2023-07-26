@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	_errors "errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -83,20 +81,18 @@ func TestQuery(t *testing.T) {
 		expectedErr      error
 	}{
 		{
-			name: "throtled_query",
+			name: "throttled_query",
 			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				os.Create("/home/dragonborn/work/ES-HL/pull/go-shopify-graphql-modified/go-shopify-graphql/graphql/testttttttttttttttttt.go")
-				fmt.Println("in mock serverrrrrrrrrrrrrrrrrrrrrr")
 				var in struct {
 					Query     string                 `json:"query"`
 					Variables map[string]interface{} `json:"variables,omitempty"`
 				}
 				_ = json.NewDecoder(r.Body).Decode(&in)
-				if timeNow.Sub(time.Now()) < 2*time.Second {
+				if time.Now().Sub(timeNow) < 2*time.Second {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte(`{"id": 1, "name": "kyle", "description": "novice gopher"}`))
 				}
-				// if in.Query == "throtled_query" {
+				// if in.Query == "throttled_query" {
 				// 	w.WriteHeader(http.StatusOK)
 				// 	w.Write([]byte(`{"id": 1, "name": "kyle", "description": "novice gopher"}`))
 				// }
@@ -120,10 +116,9 @@ func TestQuery(t *testing.T) {
 			var m map[string]interface{}
 			var v interface{}
 			t1 := time.Now()
-			fmt.Println("hehehe")
 			_ = c.do(context.Background(), tc.name, m, v)
 			t2 := time.Now()
-			if t1.Sub(t2) < 2*time.Second {
+			if t2.Sub(t1) > 2*time.Second {
 				t.Error("too much time")
 			}
 			// resp, err := MakeHTTPCall(tc.server.URL)

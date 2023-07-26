@@ -117,7 +117,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	var out struct {
 		Data   *json.RawMessage
 		Errors graphErrors
-		//Extensions interface{} // Unused.
+		// Extensions interface{} // Unused.
 	}
 	err = json.NewDecoder(resp.Body).Decode(&out)
 	if err != nil {
@@ -160,5 +160,5 @@ type operationType uint8
 const (
 	queryOperation operationType = iota
 	mutationOperation
-	//subscriptionOperation // Unused.
+	// subscriptionOperation // Unused.
 )

@@ -17,7 +17,7 @@ import (
 //
 // The implementation is created on top of the JSON tokenizer available
 // in "encoding/json".Decoder.
-func UnmarshalGraphQL(data []byte, v interface{}) error {
+func UnmarshalGraphQL(data []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	err := (&decoder{tokenizer: dec}).Decode(v)
@@ -57,7 +57,7 @@ type decoder struct {
 }
 
 // Decode decodes a single JSON value from d.tokenizer into v.
-func (d *decoder) Decode(v interface{}) error {
+func (d *decoder) Decode(v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		return fmt.Errorf("cannot decode into non-pointer %T", v)
@@ -91,6 +91,9 @@ func (d *decoder) decode() error {
 				v := d.vs[i][len(d.vs[i])-1]
 				if v.Kind() == reflect.Ptr {
 					v = v.Elem()
+				}
+				if v.Kind() == reflect.Interface {
+					return fmt.Errorf("can not unmarshal on interface type %v", v.Type().Name())
 				}
 				var f reflect.Value
 				if v.Kind() == reflect.Struct {
@@ -194,9 +197,9 @@ func (d *decoder) decode() error {
 				for i := range d.vs {
 					v := d.vs[i][len(d.vs[i])-1]
 					// TODO: Confirm this is needed, write a test case.
-					//if v.Kind() == reflect.Ptr && v.IsNil() {
+					// if v.Kind() == reflect.Ptr && v.IsNil() {
 					//	v.Set(reflect.New(v.Type().Elem())) // v = new(T).
-					//}
+					// }
 
 					// Reset slice to empty (in case it had non-zero initial value).
 					if v.Kind() == reflect.Ptr {
@@ -272,7 +275,7 @@ func hasGraphQLName(f reflect.StructField, name string) bool {
 	value, ok := f.Tag.Lookup("graphql")
 	if !ok {
 		// TODO: caseconv package is relatively slow. Optimize it, then consider using it here.
-		//return caseconv.MixedCapsToLowerCamelCase(f.Name) == name
+		// return caseconv.MixedCapsToLowerCamelCase(f.Name) == name
 		return strings.EqualFold(f.Name, name)
 	}
 	value = strings.TrimSpace(value) // TODO: Parse better.
@@ -280,10 +283,9 @@ func hasGraphQLName(f reflect.StructField, name string) bool {
 		// GraphQL fragment. It doesn't have a name.
 		return false
 	}
-	if i := strings.Index(value, "("); i != -1 {
-		value = value[:i]
-	}
-	if i := strings.Index(value, ":"); i != -1 {
+	// Cut off anything that follows the field name,
+	// such as field arguments, aliases, directives.
+	if i := strings.IndexAny(value, "(:@"); i != -1 {
 		value = value[:i]
 	}
 	return strings.TrimSpace(value) == name
