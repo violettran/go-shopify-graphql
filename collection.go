@@ -31,31 +31,21 @@ type CollectionServiceOp struct {
 	client *Client
 }
 
-type Collection struct {
-	CollectionBase
-}
-
-type CollectionImage struct {
-	AltText graphql.String `json:"altText,omitempty"`
-	ID      graphql.ID     `json:"id,omitempty"`
-	Src     graphql.String `json:"src,omitempty"`
-	Height  graphql.Int    `json:"height,omitempty"`
-	Width   graphql.Int    `json:"width,omitempty"`
-}
+var _ CollectionService = &CollectionServiceOp{}
 
 type CollectionBase struct {
-	ID               graphql.ID      `json:"id,omitempty"`
-	CreatedAt        time.Time       `json:"createdAt,omitempty"`
-	UpdatedAt        time.Time       `json:"updatedAt,omitempty"`
-	Handle           graphql.String  `json:"handle,omitempty"`
-	Title            graphql.String  `json:"title,omitempty"`
-	Description      graphql.String  `json:"description,omitempty"`
-	DescriptionHTML  graphql.String  `json:"descriptionHtml,omitempty"`
-	ProductsCount    graphql.Int     `json:"productsCount,omitempty"`
-	PublicationCount graphql.Int     `json:"publicationCount,omitempty"`
-	TemplateSuffix   graphql.String  `json:"templateSuffix,omitempty"`
-	Seo              model.Seo       `json:"seo,omitempty"`
-	Image            CollectionImage `json:"image,omitempty"`
+	ID               graphql.ID     `json:"id,omitempty"`
+	CreatedAt        time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt        time.Time      `json:"updatedAt,omitempty"`
+	Handle           graphql.String `json:"handle,omitempty"`
+	Title            graphql.String `json:"title,omitempty"`
+	Description      graphql.String `json:"description,omitempty"`
+	DescriptionHTML  graphql.String `json:"descriptionHtml,omitempty"`
+	ProductsCount    graphql.Int    `json:"productsCount,omitempty"`
+	PublicationCount graphql.Int    `json:"publicationCount,omitempty"`
+	TemplateSuffix   graphql.String `json:"templateSuffix,omitempty"`
+	Seo              model.Seo      `json:"seo,omitempty"`
+	Image            model.Image    `json:"image,omitempty"`
 }
 
 type CollectionBulkResult struct {

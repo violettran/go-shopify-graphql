@@ -49,9 +49,9 @@ type QueryRoot struct {
 	// List of the shop's code discount saved searches.
 	// CodeDiscountSavedSearches *SavedSearchConnection `json:"codeDiscountSavedSearches,omitempty"`
 	// Returns a Collection resource by ID.
-	Collection *Collection `json:"collection,omitempty"`
+	Collection *model.Collection `json:"collection,omitempty"`
 	// Return a collection by its handle.
-	CollectionByHandle *Collection `json:"collectionByHandle,omitempty"`
+	CollectionByHandle *model.Collection `json:"collectionByHandle,omitempty"`
 	// A list of rule conditions to define how collections with rules can be created.
 	// CollectionRulesConditions []*CollectionRuleConditions `json:"collectionRulesConditions,omitempty"`
 	// List of the shop's collection saved searches.
@@ -179,8 +179,8 @@ type QueryRoot struct {
 	// List of the shop's product saved searches.
 	// ProductSavedSearches *SavedSearchConnection `json:"productSavedSearches,omitempty"`
 	// Returns a ProductVariant resource by ID.
-	ProductVariant *ProductVariant `json:"productVariant,omitempty"`
-	ProductImage   *model.Image    `json:"productImage,omitempty"`
+	ProductVariant *model.ProductVariant `json:"productVariant,omitempty"`
+	ProductImage   *model.Image          `json:"productImage,omitempty"`
 	// List of the product variants.
 	// ProductVariants *ProductVariantConnection `json:"productVariants,omitempty"`
 	// List of products.
