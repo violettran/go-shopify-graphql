@@ -45,17 +45,18 @@ type CollectionImage struct {
 }
 
 type CollectionBase struct {
-	ID              graphql.ID      `json:"id,omitempty"`
-	CreatedAt       time.Time       `json:"createdAt,omitempty"`
-	UpdatedAt       time.Time       `json:"updatedAt,omitempty"`
-	Handle          graphql.String  `json:"handle,omitempty"`
-	Title           graphql.String  `json:"title,omitempty"`
-	Description     graphql.String  `json:"description,omitempty"`
-	DescriptionHTML graphql.String  `json:"descriptionHtml,omitempty"`
-	ProductsCount   graphql.Int     `json:"productsCount,omitempty"`
-	TemplateSuffix  graphql.String  `json:"templateSuffix,omitempty"`
-	Seo             Seo             `json:"seo,omitempty"`
-	Image           CollectionImage `json:"image,omitempty"`
+	ID               graphql.ID      `json:"id,omitempty"`
+	CreatedAt        time.Time       `json:"createdAt,omitempty"`
+	UpdatedAt        time.Time       `json:"updatedAt,omitempty"`
+	Handle           graphql.String  `json:"handle,omitempty"`
+	Title            graphql.String  `json:"title,omitempty"`
+	Description      graphql.String  `json:"description,omitempty"`
+	DescriptionHTML  graphql.String  `json:"descriptionHtml,omitempty"`
+	ProductsCount    graphql.Int     `json:"productsCount,omitempty"`
+	PublicationCount graphql.Int     `json:"publicationCount,omitempty"`
+	TemplateSuffix   graphql.String  `json:"templateSuffix,omitempty"`
+	Seo              Seo             `json:"seo,omitempty"`
+	Image            CollectionImage `json:"image,omitempty"`
 }
 
 type CollectionBulkResult struct {
@@ -237,6 +238,7 @@ var collectionSingleQuery = `
   descriptionHtml
   templateSuffix
   productsCount
+  publicationCount
   seo {
     description
     title
@@ -260,6 +262,7 @@ var collectionSingleQueryWithCursor = `
   descriptionHtml
   templateSuffix
   productsCount
+  publicationCount
   seo {
     description
     title
@@ -283,6 +286,7 @@ var collectionBulkQuery = `
     descriptionHtml
 	templateSuffix
 	productsCount
+	publicationCount
 	seo{
 	  description
 	  title
@@ -305,6 +309,7 @@ var collectionWithProductsBulkQuery = `
     descriptionHtml
 	templateSuffix
 	productsCount
+	publicationCount
 	seo{
 	  description
 	  title
