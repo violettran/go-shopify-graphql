@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
-
-	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/gempages/go-shopify-graphql/utils"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
+	"github.com/gempages/go-shopify-graphql/utils"
 )
 
 type ProductService interface {
@@ -33,114 +30,6 @@ type ProductServiceOp struct {
 }
 
 var _ ProductService = &ProductServiceOp{}
-
-type ProductBase struct {
-	ID               graphql.ID           `json:"id,omitempty"`
-	CreatedAt        time.Time            `json:"createdAt,omitempty"`
-	LegacyResourceID graphql.String       `json:"legacyResourceId,omitempty"`
-	Handle           graphql.String       `json:"handle,omitempty"`
-	Options          []ProductOption      `json:"options,omitempty"`
-	Tags             []graphql.String     `json:"tags,omitempty"`
-	Description      graphql.String       `json:"description,omitempty"`
-	Title            graphql.String       `json:"title,omitempty"`
-	PriceRangeV2     *ProductPriceRangeV2 `json:"priceRangeV2,omitempty"`
-	ProductType      graphql.String       `json:"productType,omitempty"`
-	Vendor           graphql.String       `json:"vendor,omitempty"`
-	TotalInventory   graphql.Int          `json:"totalInventory,omitempty"`
-	OnlineStoreURL   graphql.String       `json:"onlineStoreUrl,omitempty"`
-	DescriptionHTML  graphql.String       `json:"descriptionHtml,omitempty"`
-	SEO              Seo                  `json:"seo,omitempty"`
-	TemplateSuffix   graphql.String       `json:"templateSuffix,omitempty"`
-	Status           graphql.String       `json:"status,omitempty"`
-	PublishedAt      *time.Time           `json:"publishedAt,omitempty"`
-	UpdatedAt        time.Time            `json:"updatedAt,omitempty"`
-	TracksInventory  bool                 `json:"tracksInventory,omitempty"`
-}
-
-type ProductBulkResult struct {
-	ProductBase
-
-	Metafields      []Metafield      `json:"metafields,omitempty"`
-	ProductVariants []ProductVariant `json:"variants,omitempty"`
-	Collections     []Collection     `json:"collections,omitempty"`
-	ProductImages   []ProductImage   `json:"images,omitempty"`
-	Media           []Media          `json:"media,omitempty"`
-}
-
-type ProductImage struct {
-	AltText graphql.String `json:"altText,omitempty"`
-	ID      graphql.ID     `json:"id,omitempty"`
-	Src     graphql.String `json:"src,omitempty"`
-	Height  graphql.Int    `json:"height,omitempty"`
-	Width   graphql.Int    `json:"width,omitempty"`
-}
-
-type Media struct {
-	ID               graphql.ID             `json:"id,omitempty"`
-	MimeType         graphql.String         `json:"mimeType,omitempty"`
-	MediaContentType model.MediaContentType `json:"mediaContentType,omitempty"`
-	Alt              graphql.String         `json:"alt,omitempty"`
-	Image            *ProductImage          `json:"image,omitempty"`
-	Sources          interface{}            `json:"sources,omitEmpty"`
-	OriginalSource   *Source                `json:"originalSource,omitempty"`
-	EmbedUrl         graphql.String         `json:"embedUrl,omitempty"`
-	OriginUrl        graphql.String         `json:"originUrl,omitempty"`
-	Preview          Preview                `json:"preview,omitempty"`
-}
-
-type Preview struct {
-	Image ProductImage `json:"image,omitempty"`
-}
-
-type Source struct {
-	MimeType graphql.String `json:"mimeType,omitempty"`
-	Url      graphql.String `json:"url,omitempty"`
-	FileSize graphql.Int    `json:"filesize,omitempty"`
-	Format   graphql.String `json:"format,omitempty"`
-}
-
-// SEO information.
-type Seo struct {
-	// SEO Description.
-	Description graphql.String `json:"description,omitempty"`
-	// SEO Title.
-	Title graphql.String `json:"title,omitempty"`
-}
-
-type ProductOption struct {
-	ID       graphql.ID       `json:"id,omitempty"`
-	Name     graphql.String   `json:"name,omitempty"`
-	Position graphql.Int      `json:"position,omitempty"`
-	Values   []graphql.String `json:"values,omitempty"`
-}
-
-type ProductPriceRangeV2 struct {
-	MinVariantPrice MoneyV2 `json:"minVariantPrice,omitempty"`
-	MaxVariantPrice MoneyV2 `json:"maxVariantPrice,omitempty"`
-}
-
-type ProductUpdate struct {
-	ProductInput model.ProductInput
-}
-
-type MetafieldInput struct {
-	ID        graphql.ID               `json:"id,omitempty"`
-	Namespace graphql.String           `json:"namespace,omitempty"`
-	Key       graphql.String           `json:"key,omitempty"`
-	Value     graphql.String           `json:"value,omitempty"`
-	Type      model.MetafieldValueType `json:"type,omitempty"`
-}
-
-type SEOInput struct {
-	Description graphql.String `json:"description,omitempty"`
-	Title       graphql.String `json:"title,omitempty"`
-}
-
-type ImageInput struct {
-	AltText graphql.String `json:"altText,omitempty"`
-	ID      graphql.ID     `json:"id,omitempty"`
-	Src     graphql.String `json:"src,omitempty"`
-}
 
 type mutationProductCreate struct {
 	ProductCreateResult productCreateResult `graphql:"productCreate(input: $input, media: $media)" json:"productCreate"`
@@ -498,8 +387,8 @@ func (s *ProductServiceOp) ListAll() ([]*model.Product, error) {
 
 func (s *ProductServiceOp) List(query string) ([]*model.Product, error) {
 	q := fmt.Sprintf(`
-		query products{
-			products(query: "$query"){
+		query products {
+			products(query: "$query") {
 				edges{
 					node{
 						%s

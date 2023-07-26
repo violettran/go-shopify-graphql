@@ -6,10 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gempages/go-shopify-graphql/utils"
-
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
-
+	"github.com/gempages/go-shopify-graphql/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,14 +54,14 @@ type CollectionBase struct {
 	ProductsCount    graphql.Int     `json:"productsCount,omitempty"`
 	PublicationCount graphql.Int     `json:"publicationCount,omitempty"`
 	TemplateSuffix   graphql.String  `json:"templateSuffix,omitempty"`
-	Seo              Seo             `json:"seo,omitempty"`
+	Seo              model.Seo       `json:"seo,omitempty"`
 	Image            CollectionImage `json:"image,omitempty"`
 }
 
 type CollectionBulkResult struct {
 	CollectionBase
 
-	Products []ProductBulkResult `json:"products,omitempty"`
+	Products []*model.Product `json:"products,omitempty"`
 }
 
 type CollectionEdge struct {
@@ -80,8 +79,8 @@ type CollectionsQueryResult struct {
 }
 
 type CollectionProductEdge struct {
-	Product ProductBulkResult `json:"node,omitempty"`
-	Cursor  string            `json:"cursor,omitempty"`
+	Product *model.Product `json:"node,omitempty"`
+	Cursor  string         `json:"cursor,omitempty"`
 }
 
 type CollectionProductConnection struct {
@@ -121,10 +120,10 @@ type CollectionInput struct {
 	ID graphql.ID `json:"id,omitempty"`
 
 	// The image associated with the collection.
-	Image *ImageInput `json:"image,omitempty"`
+	Image *model.ImageInput `json:"image,omitempty"`
 
 	// The metafields to associate with this collection.
-	Metafields []MetafieldInput `json:"metafields,omitempty"`
+	Metafields []model.MetafieldInput `json:"metafields,omitempty"`
 
 	// Initial list of collection products. Only valid with productCreate and without rules.
 	Products []graphql.ID `json:"products,omitempty"`
@@ -136,7 +135,7 @@ type CollectionInput struct {
 	RuleSet *CollectionRuleSetInput `json:"ruleSet,omitempty"`
 
 	// SEO information for the collection.
-	SEO *SEOInput `json:"seo,omitempty"`
+	SEO *model.SEOInput `json:"seo,omitempty"`
 
 	// The order in which the collection's products are sorted.
 	SortOrder *CollectionSortOrder `json:"sortOrder,omitempty"`

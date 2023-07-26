@@ -1,6 +1,9 @@
 package shopify
 
-import "gopkg.in/guregu/null.v4"
+import (
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
+	"gopkg.in/guregu/null.v4"
+)
 
 type QueryRoot struct {
 	// Lookup an App by ID or return the currently authenticated App.
@@ -177,7 +180,7 @@ type QueryRoot struct {
 	// ProductSavedSearches *SavedSearchConnection `json:"productSavedSearches,omitempty"`
 	// Returns a ProductVariant resource by ID.
 	ProductVariant *ProductVariant `json:"productVariant,omitempty"`
-	ProductImage   *ProductImage   `json:"productImage,omitempty"`
+	ProductImage   *model.Image    `json:"productImage,omitempty"`
 	// List of the product variants.
 	// ProductVariants *ProductVariantConnection `json:"productVariants,omitempty"`
 	// List of products.

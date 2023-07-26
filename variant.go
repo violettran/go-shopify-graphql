@@ -33,8 +33,8 @@ type ProductVariant struct {
 	Position            graphql.Int                      `json:"position,omitempty"`
 	Weight              graphql.Float                    `json:"weight,omitempty"`
 	WeightUnit          WeightUnit                       `json:"weightUnit,omitempty"`
-	Product             *ProductBulkResult               `json:"product,omitempty"`
-	Image               ProductImage                     `json:"image,omitempty"`
+	Product             *model.Product                   `json:"product,omitempty"`
+	Image               model.Image                      `json:"image,omitempty"`
 	AvailableForSale    graphql.Boolean                  `json:"availableForSale,omitempty"`
 	CompareAtPriceV2    MoneyV2                          `json:"compareAtPriceV2,omitempty"`
 	CreatedAt           time.Time                        `json:"createdAt,omitempty"`
@@ -82,7 +82,7 @@ type ProductVariantInput struct {
 	LegacyResourceID graphql.String `json:"legacyResourceId,omitempty"`
 
 	// Additional customizable information about the product variant.
-	Metafields []MetafieldInput `json:"metafields,omitempty"`
+	Metafields []model.MetafieldInput `json:"metafields,omitempty"`
 
 	// The custom properties that a shop owner uses to define product variants.
 	Options []graphql.String `json:"options,omitempty"`
