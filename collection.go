@@ -110,6 +110,9 @@ var collectionSingleQueryWithCursor = `
       }
       cursor
     }
+    pageInfo{
+      hasNextPage
+    }
   }
 `
 
@@ -118,8 +121,8 @@ var collectionBulkQuery = `
 	handle
 	title
 	updatedAt
- 	description
-    descriptionHtml
+	description
+	descriptionHtml
 	templateSuffix
 	productsCount
 	publicationCount
@@ -141,8 +144,8 @@ var collectionWithProductsBulkQuery = `
 	handle
 	title
 	updatedAt
- 	description
-    descriptionHtml
+	description
+	descriptionHtml
 	templateSuffix
 	productsCount
 	publicationCount
@@ -202,7 +205,7 @@ func (s *CollectionServiceOp) ListAll() ([]*model.Collection, error) {
 				}
 			}
 		}
-	`, collectionBulkQuery)
+	`, collectionWithProductsBulkQuery)
 
 	res := make([]*model.Collection, 0)
 	err := s.client.BulkOperation.BulkQuery(q, &res)
@@ -301,15 +304,17 @@ func (s *CollectionServiceOp) Get(id string) (*model.Collection, error) {
 	}
 
 	nextPageData := out
-	hasNextPage := out.Products.PageInfo.HasNextPage
-	for hasNextPage && len(nextPageData.Products.Edges) > 0 {
-		cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
-		nextPageData, err = s.getPage(id, cursor)
-		if err != nil {
-			return nil, err
+	if out != nil && out.Products != nil && out.Products.PageInfo != nil {
+		hasNextPage := out.Products.PageInfo.HasNextPage
+		for hasNextPage && len(nextPageData.Products.Edges) > 0 {
+			cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
+			nextPageData, err = s.getPage(id, cursor)
+			if err != nil {
+				return nil, err
+			}
+			out.Products.Edges = append(out.Products.Edges, nextPageData.Products.Edges...)
+			hasNextPage = nextPageData.Products.PageInfo.HasNextPage
 		}
-		out.Products.Edges = append(out.Products.Edges, nextPageData.Products.Edges...)
-		hasNextPage = nextPageData.Products.PageInfo.HasNextPage
 	}
 
 	return out, nil

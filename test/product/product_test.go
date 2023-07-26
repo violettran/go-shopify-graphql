@@ -1,10 +1,9 @@
-package shopify_test
+package product_test
 
 import (
 	"fmt"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/gempages/go-shopify-graphql"
 	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
@@ -19,12 +18,7 @@ const (
 	TestProductMediaCount    = 6
 )
 
-func TestProduct(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Product Suite")
-}
-
-var _ = Describe("Product", func() {
+var _ = Describe("ProductService", func() {
 	var (
 		shopifyClient *shopify.Client
 		domain        string
@@ -103,8 +97,8 @@ var _ = Describe("Product", func() {
 	Describe("ListWithFields", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
-			first := 1
-			results, err := shopifyClient.Product.ListWithFields("", fields, first, "")
+			firstLimit := 1
+			results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeNil())
 			for _, e := range results.Edges {
