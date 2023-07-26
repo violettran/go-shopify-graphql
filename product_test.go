@@ -1,13 +1,22 @@
 package shopify_test
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gempages/go-shopify-graphql"
 	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+const (
+	TotalProductCount        = 29
+	TestSingleQueryProductID = "gid://shopify/Product/8427241144634"
+	TestProductVariantCount  = 72
+	TestProductMediaCount    = 6
 )
 
 func TestProduct(t *testing.T) {
@@ -36,6 +45,7 @@ var _ = Describe("Product", func() {
 			results, err := shopifyClient.Product.ListAll()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
+			Expect(len(results)).To(Equal(TotalProductCount))
 			for i := range results {
 				Expect(results[i].ID).NotTo(BeEmpty())
 				Expect(results[i].Title).NotTo(BeEmpty())
@@ -45,6 +55,48 @@ var _ = Describe("Product", func() {
 				Expect(results[i].Variants).NotTo(BeNil())
 				Expect(results[i].CreatedAt).NotTo(BeEmpty())
 			}
+		})
+	})
+
+	Describe("List", func() {
+		When("no query is provided", func() {
+			It("returns all products", func() {
+				results, err := shopifyClient.Product.List("")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(results).NotTo(BeEmpty())
+				Expect(len(results)).To(Equal(TotalProductCount))
+				for i := range results {
+					Expect(results[i].ID).NotTo(BeEmpty())
+					Expect(results[i].Title).NotTo(BeEmpty())
+					Expect(results[i].Handle).NotTo(BeEmpty())
+					Expect(results[i].Images).NotTo(BeNil())
+					Expect(results[i].Media).NotTo(BeNil())
+					Expect(results[i].Variants).NotTo(BeNil())
+					Expect(results[i].CreatedAt).NotTo(BeEmpty())
+				}
+			})
+		})
+
+		When("id query is provided", func() {
+			It("returns products with correct IDs", func() {
+				ids := []string{"8427241144634", "8427240423738", "8427239178554"}
+				query := fmt.Sprintf("id:%s", strings.Join(ids, " OR "))
+				results, err := shopifyClient.Product.List(query)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(results).NotTo(BeEmpty())
+				Expect(len(results)).To(Equal(len(ids)))
+				for i := range results {
+					Expect(results[i].ID).NotTo(BeEmpty())
+					id := strings.ReplaceAll(results[i].ID, "gid://shopify/Product/", "")
+					Expect(id).To(BeElementOf(ids))
+					Expect(results[i].Title).NotTo(BeEmpty())
+					Expect(results[i].Handle).NotTo(BeEmpty())
+					Expect(results[i].Images).NotTo(BeNil())
+					Expect(results[i].Media).NotTo(BeNil())
+					Expect(results[i].Variants).NotTo(BeNil())
+					Expect(results[i].CreatedAt).NotTo(BeEmpty())
+				}
+			})
 		})
 	})
 
@@ -69,11 +121,28 @@ var _ = Describe("Product", func() {
 		When("query first 5 products", func() {
 			It("returns 5 products", func() {
 				fields := `id`
-				first := 5
-				results, err := shopifyClient.Product.ListWithFields("", fields, first, "")
+				firstLimit := 5
+				results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
-				Expect(len(results.Edges)).To(Equal(first))
+				Expect(len(results.Edges)).To(Equal(firstLimit))
+			})
+		})
+
+		When("query includes interface type media", func() {
+			It("can returns media", func() {
+				fields := fmt.Sprintf("id %s", mediaQuery)
+				firstLimit := 5
+				results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(results).NotTo(BeNil())
+				Expect(len(results.Edges)).To(Equal(firstLimit))
+				for _, e := range results.Edges {
+					Expect(e.Node.Media).NotTo(BeNil())
+					for i := range e.Node.Media.Edges {
+						Expect(e.Node.Media.Edges[i].Node).NotTo(BeNil())
+					}
+				}
 			})
 		})
 	})
@@ -89,12 +158,11 @@ var _ = Describe("Product", func() {
 
 		When("ID exists", func() {
 			It("returns the correct product with all of its variants", func() {
-				productID := "gid://shopify/Product/8427241144634"
-				product, err := shopifyClient.Product.Get(productID)
+				product, err := shopifyClient.Product.Get(TestSingleQueryProductID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
-				Expect(product.ID).To(Equal(productID))
-				Expect(len(product.Variants.Edges)).To(Equal(72))
+				Expect(product.ID).To(Equal(TestSingleQueryProductID))
+				Expect(len(product.Variants.Edges)).To(Equal(TestProductVariantCount))
 			})
 		})
 	})
@@ -108,80 +176,14 @@ var _ = Describe("Product", func() {
 			})
 		})
 
-		When("ID exists", func() {
-			It("returns the correct product with requested fields", func() {
-				productID := "gid://shopify/Product/8427241144634"
-				fields := `
-					id
-					media(first: 100) {
-						edges {
-							node {
-								mediaContentType
-								...on MediaImage {
-									id
-									alt
-									mimeType
-									image {
-										height
-										src
-										width
-									}
-								}
-								...on Model3d {
-									id
-									alt
-									originalSource {
-										url
-										format
-										filesize
-										mimeType
-									}
-									preview {
-										image {
-											src
-										}
-									}
-								}
-								...on Video {
-									id
-									alt
-									duration
-									originalSource {
-										url
-										format
-										mimeType
-										height
-										width
-									}
-									preview {
-										image {
-											src
-										}
-									}
-								}
-								...on ExternalVideo {
-									id
-									originUrl
-									embedUrl
-									preview {
-										image {
-											src
-										}
-									}
-								}
-							}
-							cursor
-						}
-						pageInfo {
-							hasNextPage
-						}
-					}
-				`
-				product, err := shopifyClient.Product.GetWithFields(productID, fields)
+		When("query media connection", func() {
+			It("returns product with any type of media", func() {
+				fields := fmt.Sprintf("id %s", mediaQuery)
+				product, err := shopifyClient.Product.GetWithFields(TestSingleQueryProductID, fields)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
-				Expect(product.ID).To(Equal(productID))
-				Expect(len(product.Media.Edges)).To(Equal(6))
+				Expect(product.ID).To(Equal(TestSingleQueryProductID))
+				Expect(len(product.Media.Edges)).To(Equal(TestProductMediaCount))
 				for i := range product.Media.Edges {
 					Expect(product.Media.Edges[i].Node).NotTo(BeNil())
 				}
@@ -189,3 +191,67 @@ var _ = Describe("Product", func() {
 		})
 	})
 })
+
+var mediaQuery = `media(first: 10) {
+	edges {
+		node {
+			mediaContentType
+			...on MediaImage {
+				id
+				alt
+				mimeType
+				image {
+					height
+					src
+					width
+				}
+			}
+			...on Model3d {
+				id
+				alt
+				originalSource {
+					url
+					format
+					filesize
+					mimeType
+				}
+				preview {
+					image {
+						src
+					}
+				}
+			}
+			...on Video {
+				id
+				alt
+				duration
+				originalSource {
+					url
+					format
+					mimeType
+					height
+					width
+				}
+				preview {
+					image {
+						src
+					}
+				}
+			}
+			...on ExternalVideo {
+				id
+				originUrl
+				embedUrl
+				preview {
+					image {
+						src
+					}
+				}
+			}
+		}
+		cursor
+	}
+	pageInfo {
+		hasNextPage
+	}
+}`

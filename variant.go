@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
 )
 
 type VariantService interface {

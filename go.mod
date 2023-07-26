@@ -5,13 +5,13 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go v1.44.258
 	github.com/gempages/go-helper v1.1.1
+	github.com/gempages/go-shopify-graphql-model v0.0.0-20230726095023-3a54c3cb356b
 	github.com/getsentry/sentry-go v0.20.0
 	github.com/goccy/go-json v0.10.2
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo/v2 v2.8.3
 	github.com/onsi/gomega v1.27.0
-	github.com/r0busta/go-shopify-graphql-model/v3 v3.0.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/vektah/gqlparser/v2 v2.5.7
 	golang.org/x/net v0.12.0
@@ -26,6 +26,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20230309165930-d61513b1440d // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect

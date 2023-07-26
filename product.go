@@ -9,7 +9,7 @@ import (
 	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/gempages/go-shopify-graphql/utils"
 
-	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
 
 type ProductService interface {

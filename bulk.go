@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/gempages/go-helper/tracing"
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/gempages/go-shopify-graphql/rand"
 	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
 	"github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/r0busta/go-shopify-graphql-model/v3/graph/model"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/guregu/null.v4"
 )
