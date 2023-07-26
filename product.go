@@ -379,7 +379,7 @@ func (s *ProductServiceOp) ListAll() ([]*model.Product, error) {
 	res := make([]*model.Product, 0)
 	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bulk query: %w", err)
 	}
 
 	return res, nil
@@ -403,10 +403,52 @@ func (s *ProductServiceOp) List(query string) ([]*model.Product, error) {
 	res := make([]*model.Product, 0)
 	err := s.client.BulkOperation.BulkQuery(q, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bulk query: %w", err)
 	}
 
 	return res, nil
+}
+
+func (s *ProductServiceOp) ListWithFields(query, fields string, first int, after string) (*model.ProductConnection, error) {
+	if fields == "" {
+		fields = `id`
+	}
+
+	q := fmt.Sprintf(`
+		query products ($first: Int!, $after: String, $query: String) {
+			products (first: $first, after: $after, query: $query) {
+				edges {
+					node {
+						%s
+					}
+					cursor
+				}
+				pageInfo {
+					hasNextPage
+				}
+			}
+		}
+	`, fields)
+
+	vars := map[string]interface{}{
+		"first": first,
+	}
+	if after != "" {
+		vars["after"] = after
+	}
+	if query != "" {
+		vars["query"] = query
+	}
+	out := model.QueryRoot{}
+
+	err := utils.ExecWithRetries(s.client.retries, func() error {
+		return s.client.gql.QueryString(context.Background(), q, vars, &out)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Products, nil
 }
 
 func (s *ProductServiceOp) Get(id string) (*model.Product, error) {
@@ -585,48 +627,6 @@ func (s *ProductServiceOp) GetSingleProduct(id string) (*model.Product, error) {
 	}
 
 	return out.Product, nil
-}
-
-func (s *ProductServiceOp) ListWithFields(query, fields string, first int, after string) (*model.ProductConnection, error) {
-	if fields == "" {
-		fields = `id`
-	}
-
-	q := fmt.Sprintf(`
-		query products ($first: Int!, $after: String, $query: String) {
-			products (first: $first, after: $after, query: $query) {
-				edges {
-					cursor
-					node {
-						%s
-					}
-				}
-				pageInfo {
-					hasNextPage
-				}
-			}
-		}
-	`, fields)
-
-	vars := map[string]interface{}{
-		"first": first,
-	}
-	if after != "" {
-		vars["after"] = after
-	}
-	if query != "" {
-		vars["query"] = query
-	}
-	out := model.QueryRoot{}
-
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return out.Products, nil
 }
 
 func (s *ProductServiceOp) Create(product model.ProductInput, media []model.CreateMediaInput) error {
