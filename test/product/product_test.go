@@ -47,7 +47,7 @@ var _ = Describe("ProductService", func() {
 				Expect(results[i].Images).NotTo(BeNil())
 				Expect(results[i].Media).NotTo(BeNil())
 				Expect(results[i].Variants).NotTo(BeNil())
-				Expect(results[i].CreatedAt).NotTo(BeEmpty())
+				Expect(results[i].CreatedAt).NotTo(BeZero())
 			}
 		})
 	})
@@ -66,7 +66,7 @@ var _ = Describe("ProductService", func() {
 					Expect(results[i].Images).NotTo(BeNil())
 					Expect(results[i].Media).NotTo(BeNil())
 					Expect(results[i].Variants).NotTo(BeNil())
-					Expect(results[i].CreatedAt).NotTo(BeEmpty())
+					Expect(results[i].CreatedAt).NotTo(BeZero())
 				}
 			})
 		})
@@ -88,7 +88,7 @@ var _ = Describe("ProductService", func() {
 					Expect(results[i].Images).NotTo(BeNil())
 					Expect(results[i].Media).NotTo(BeNil())
 					Expect(results[i].Variants).NotTo(BeNil())
-					Expect(results[i].CreatedAt).NotTo(BeEmpty())
+					Expect(results[i].CreatedAt).NotTo(BeZero())
 				}
 			})
 		})
