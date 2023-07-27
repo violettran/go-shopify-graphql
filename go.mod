@@ -3,9 +3,8 @@ module github.com/gempages/go-shopify-graphql
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.258
 	github.com/gempages/go-helper v1.1.1
-	github.com/gempages/go-shopify-graphql-model v0.0.0-20230726095023-3a54c3cb356b
+	github.com/gempages/go-shopify-graphql-model v0.0.0-20230727024126-e37b28206404
 	github.com/getsentry/sentry-go v0.20.0
 	github.com/goccy/go-json v0.10.2
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
@@ -13,7 +12,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.8.3
 	github.com/onsi/gomega v1.27.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/vektah/gqlparser/v2 v2.5.7
+	github.com/vektah/gqlparser/v2 v2.5.8
 	golang.org/x/net v0.12.0
 	gopkg.in/guregu/null.v4 v4.0.0
 )
