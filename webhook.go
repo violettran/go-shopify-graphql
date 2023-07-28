@@ -3,276 +3,125 @@ package shopify
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/gempages/go-shopify-graphql/graphql"
-
-	"github.com/sirupsen/logrus"
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
 
 type WebhookService interface {
-	NewWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload)
-	NewEventBridgeWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload)
+	NewWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
+	NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
 
-	ListWebhookSubscriptions(topics []WebhookSubscriptionTopic) (output []*WebhookSubscription, err error)
-	DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error)
+	ListWebhookSubscriptions(topics []model.WebhookSubscriptionTopic) (output []*model.WebhookSubscription, err error)
+	DeleteWebhook(webhookID string) (deletedID *string, err error)
 }
 
 type WebhookServiceOp struct {
 	client *Client
 }
 
-type EventBridgeWebhookSubscriptionCreatePayload struct {
-	// The list of errors that occurred from executing the mutation.
-	UserErrors []UserErrors `json:"userErrors,omitempty"`
-	// The webhook subscription that was created.
-	WebhookSubscription WebhookSubscription `json:"webhookSubscription,omitempty"`
-}
-
-type WebhookSubscriptionCreatePayload struct {
-	// The list of errors that occurred from executing the mutation.
-	UserErrors []UserErrors `json:"userErrors,omitempty"`
-	// The webhook subscription that was created.
-	WebhookSubscription WebhookSubscription `json:"webhookSubscription,omitempty"`
-}
-
-// Return type for `webhookSubscriptionDelete` mutation.
-type WebhookSubscriptionDeletePayload struct {
-	// The ID of the deleted webhook subscription.
-	DeletedWebhookSubscriptionID *graphql.String `json:"deletedWebhookSubscriptionId,omitempty"`
-	// The list of errors that occurred from executing the mutation.
-	UserErrors []*UserErrors `json:"userErrors,omitempty"`
-}
-
-type WebhookSubscriptionConnection struct {
-	// A list of edges.
-	Edges []*WebhookSubscriptionEdge `json:"edges,omitempty"`
-	// Information to aid in pagination.
-	PageInfo *PageInfo `json:"pageInfo,omitempty"`
-}
-
-type WebhookSubscriptionEdge struct {
-	// A cursor for use in pagination.
-	Cursor graphql.String `json:"cursor,omitempty"`
-	// The item at the end of WebhookSubscriptionEdge.
-	Node *WebhookSubscription `json:"node,omitempty"`
-}
-
-// A webhook subscription is a persisted data object created by an app using the REST Admin API or GraphQL Admin API.
-// It describes the topic that the app wants to receive, and a destination where Shopify should send webhooks of the specified topic.
-// When an event for a given topic occurs, the webhook subscription sends a relevant payload to the destination.
-// Learn more about the [webhooks system](https://shopify.dev/tutorials/manage-webhooks).
-type WebhookSubscription struct {
-	// The destination URI to which the webhook subscription will send a message when an event occurs.
-	CallbackURL graphql.String `json:"callbackUrl,omitempty"`
-	// The date and time when the webhook subscription was created.
-	CreatedAt time.Time `json:"createdAt,omitempty"`
-	// The endpoint to which the webhook subscription will send events. todo check this
-	Endpoint WebhookSubscriptionEndpoint `json:"endpoint,omitempty"`
-	// The format in which the webhook subscription should send the data.
-	Format WebhookSubscriptionFormat `json:"format,omitempty"`
-	// A globally-unique identifier.
-	ID graphql.ID `json:"id,omitempty"`
-	// An optional array of top-level resource fields that should be serialized and sent in the webhook message. If null, then all fields will be sent.
-	IncludeFields []graphql.String `json:"includeFields,omitempty"`
-	// The ID of the corresponding resource in the REST Admin API.
-	LegacyResourceID graphql.String `json:"legacyResourceId,omitempty"`
-	// The list of namespaces for any metafields that should be included in the webhook subscription.
-	MetafieldNamespaces []graphql.String `json:"metafieldNamespaces,omitempty"`
-	// The type of event that triggers the webhook. The topic determines when the webhook subscription sends a webhook, as well as what class of data object that webhook contains.
-	Topic WebhookSubscriptionTopic `json:"topic,omitempty"`
-	// The date and time when the webhook subscription was updated.
-	UpdatedAt graphql.String `json:"updatedAt,omitempty"`
-}
-
-type WebhookSubscriptionEndpoint struct {
-	WebhookHTTPEndpoint        `graphql:"... on WebhookHttpEndpoint"`
-	WebhookEventBridgeEndpoint `graphql:"... on WebhookEventBridgeEndpoint"`
-}
-
-// Amazon EventBridge event source.
-type WebhookEventBridgeEndpoint struct {
-	// ARN of this EventBridge event source.
-	Arn graphql.String `json:"arn,omitempty"`
-}
-
-// HTTP endpoint where POST requests will be made to.
-type WebhookHTTPEndpoint struct {
-	// URL of webhook endpoint to deliver webhooks to.
-	CallbackURL graphql.String `json:"callbackUrl,omitempty"`
-}
-
-// Google Cloud Pub/Sub event source.
-type WebhookPubSubEndpoint struct {
-	// The Google Cloud Pub/Sub project ID.
-	PubSubProject graphql.String `json:"pubSubProject,omitempty"`
-	// The Google Cloud Pub/Sub topic ID.
-	PubSubTopic graphql.String `json:"pubSubTopic,omitempty"`
-}
-
-type WebhookSubscriptionFormat graphql.String
-
-type WebhookSubscriptionTopic graphql.String
-
-// Specifies the input fields for a webhook subscription.
-type WebhookSubscriptionInput struct {
-	// URL where the webhook subscription should send the POST request when the event occurs.
-	CallbackURL graphql.String `json:"callbackUrl,omitempty"`
-	// The format in which the webhook subscription should send the data.
-	Format WebhookSubscriptionFormat `json:"format,omitempty"`
-	// The list of fields to be included in the webhook subscription.
-	IncludeFields []string `json:"includeFields,omitempty"`
-	// The list of namespaces for any metafields that should be included in the webhook subscription.
-	MetafieldNamespaces []string `json:"metafieldNamespaces,omitempty"`
-}
-
-type EventBridgeWebhookSubscriptionInput struct {
-	// ARN where the event webhook subscription should send the POST request when the event occurs.
-	ARN graphql.String `json:"arn,omitempty"`
-	// The format in which the webhook subscription should send the data.
-	Format WebhookSubscriptionFormat `json:"format,omitempty"`
-	// The list of fields to be included in the webhook subscription.
-	IncludeFields []string `json:"includeFields,omitempty"`
-	// The list of namespaces for any metafields that should be included in the webhook subscription.
-	MetafieldNamespaces []string `json:"metafieldNamespaces,omitempty"`
-}
+var _ WebhookService = &WebhookServiceOp{}
 
 type mutationWebhookCreate struct {
-	WebhookCreateResult WebhookSubscriptionCreatePayload `graphql:"webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"webhookSubscriptionCreate"`
+	WebhookCreateResult *model.WebhookSubscriptionCreatePayload `graphql:"webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"webhookSubscriptionCreate"`
 }
 
 type mutationWebhookDelete struct {
-	WebhookDeleteResult WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionCreate"`
+	WebhookDeleteResult *model.WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionCreate"`
 }
 
 type mutationEventBridgeWebhookCreate struct {
-	EventBridgeWebhookCreateResult EventBridgeWebhookSubscriptionCreatePayload `graphql:"eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"eventBridgeWebhookSubscriptionCreate"`
+	EventBridgeWebhookCreateResult *model.EventBridgeWebhookSubscriptionCreatePayload `graphql:"eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"eventBridgeWebhookSubscriptionCreate"`
 }
 
-type WebhookTopic struct {
-	WebhookSubscriptionTopic WebhookSubscriptionTopic
-}
-
-type WebhookTopicSubscription struct {
-	WebhookSubscriptionInput            WebhookSubscriptionInput
-	EventBridgeWebhookSubscriptionInput EventBridgeWebhookSubscriptionInput
-}
-
-const (
-	WebhookSubscriptionTopicProductsCreate      = WebhookSubscriptionTopic("PRODUCTS_CREATE")
-	WebhookSubscriptionTopicProductsUpdate      = WebhookSubscriptionTopic("PRODUCTS_UPDATE")
-	WebhookSubscriptionTopicProductsDelete      = WebhookSubscriptionTopic("PRODUCTS_DELETE")
-	WebhookSubscriptionTopicCollectionsCreate   = WebhookSubscriptionTopic("COLLECTIONS_CREATE")
-	WebhookSubscriptionTopicCollectionsUpdate   = WebhookSubscriptionTopic("COLLECTIONS_UPDATE")
-	WebhookSubscriptionTopicCollectionsDelete   = WebhookSubscriptionTopic("COLLECTIONS_DELETE")
-	WebhookSubscriptionTopicShopUpdate          = WebhookSubscriptionTopic("SHOP_UPDATE")
-	WebhookSubscriptionTopicAppUninstall        = WebhookSubscriptionTopic("APP_UNINSTALLED")
-	WebhookSubscriptionTopicThemesPublish       = WebhookSubscriptionTopic("THEMES_PUBLISH")
-	WebhookSubscriptionTopicThemesCreate        = WebhookSubscriptionTopic("THEMES_CREATE")
-	WebhookSubscriptionTopicThemesUpdate        = WebhookSubscriptionTopic("THEMES_UPDATE")
-	WebhookSubscriptionTopicCustomersUpdate     = WebhookSubscriptionTopic("CUSTOMERS_UPDATE")
-	WebhookSubscriptionTopicCustomersCreate     = WebhookSubscriptionTopic("CUSTOMERS_CREATE")
-	WebhookSubscriptionTopicCustomersDelete     = WebhookSubscriptionTopic("CUSTOMERS_DELETE")
-	WebhookSubscriptionTopicCustomerGroupCreate = WebhookSubscriptionTopic("CUSTOMER_GROUPS_CREATE")
-	WebhookSubscriptionTopicCustomerGroupUpdate = WebhookSubscriptionTopic("CUSTOMER_GROUPS_UPDATE")
-	WebhookSubscriptionTopicCartCreate          = WebhookSubscriptionTopic("CARTS_CREATE")
-	WebhookSubscriptionTopicCartUpdate          = WebhookSubscriptionTopic("CARTS_UPDATE")
-	WebhookSubscriptionTopicCheckoutUpdate      = WebhookSubscriptionTopic("CHECKOUTS_UPDATE")
-)
-
-func (w WebhookServiceOp) NewWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output WebhookSubscriptionCreatePayload) {
+func (w WebhookServiceOp) NewWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
 	m := mutationWebhookCreate{}
 	vars := map[string]interface{}{
-		"topic":               topic.WebhookSubscriptionTopic,
-		"webhookSubscription": input.WebhookSubscriptionInput,
+		"topic":               topic,
+		"webhookSubscription": input,
 	}
-	err := w.client.gql.Mutate(context.Background(), &m, vars)
+	err = w.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
-		return m.WebhookCreateResult
+		return
 	}
 
 	if len(m.WebhookCreateResult.UserErrors) > 0 {
 		err = fmt.Errorf("%+v", m.WebhookCreateResult.UserErrors)
-		logrus.Info(err)
-		return m.WebhookCreateResult
+		return
 	}
 
-	return m.WebhookCreateResult
+	return m.WebhookCreateResult.WebhookSubscription, nil
 }
 
-func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic WebhookTopic, input WebhookTopicSubscription) (output EventBridgeWebhookSubscriptionCreatePayload) {
+func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
 	m := mutationEventBridgeWebhookCreate{}
 	vars := map[string]interface{}{
-		"topic":               topic.WebhookSubscriptionTopic,
-		"webhookSubscription": input.EventBridgeWebhookSubscriptionInput,
+		"topic":               topic,
+		"webhookSubscription": input,
 	}
 
-	err := w.client.gql.Mutate(context.Background(), &m, vars)
+	err = w.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
-		logrus.Info(err)
-		return m.EventBridgeWebhookCreateResult
+		return
 	}
 
 	if len(m.EventBridgeWebhookCreateResult.UserErrors) > 0 {
 		err = fmt.Errorf("%+v", m.EventBridgeWebhookCreateResult.UserErrors)
-		logrus.Info(err)
-		return m.EventBridgeWebhookCreateResult
+		return
 	}
 
-	return m.EventBridgeWebhookCreateResult
+	return m.EventBridgeWebhookCreateResult.WebhookSubscription, nil
 }
 
-func (w WebhookServiceOp) DeleteWebhook(webhookID string) (output WebhookSubscriptionDeletePayload, err error) {
+func (w WebhookServiceOp) DeleteWebhook(webhookID string) (deletedID *string, err error) {
 	m := mutationWebhookDelete{}
 	vars := map[string]interface{}{
 		"id": webhookID,
 	}
 	err = w.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
-		logrus.Info(err)
-		return m.WebhookDeleteResult, err
+		return
 	}
 
 	if len(m.WebhookDeleteResult.UserErrors) > 0 {
 		err = fmt.Errorf("%+v", m.WebhookDeleteResult.UserErrors)
-		logrus.Info(err)
+		return
 	}
-	return m.WebhookDeleteResult, err
+	return m.WebhookDeleteResult.DeletedWebhookSubscriptionID, nil
 }
 
-func (w WebhookServiceOp) ListWebhookSubscriptions(topics []WebhookSubscriptionTopic) (output []*WebhookSubscription, err error) {
+func (w WebhookServiceOp) ListWebhookSubscriptions(topics []model.WebhookSubscriptionTopic) (output []*model.WebhookSubscription, err error) {
 	queryFormat := `query webhookSubscriptions($first: Int!, $topics: [WebhookSubscriptionTopic!]%s) {
-    webhookSubscriptions(first: $first, topics: $topics%s) {
-      edges {
-        cursor
-        node {
-          id,
-          topic,
-          endpoint {
-            __typename
-            ... on WebhookHttpEndpoint {
-              callbackUrl
-            }
-            ... on WebhookEventBridgeEndpoint{
-              arn
-            }
-          }
-          callbackUrl
-          format
-          topic
-          includeFields
-          createdAt
-          updatedAt
-        }
-      }
-      pageInfo {
-        hasNextPage
-      }
-    }
-  }`
+		webhookSubscriptions(first: $first, topics: $topics%s) {
+		  edges {
+			cursor
+			node {
+			  id,
+			  topic,
+			  endpoint {
+				__typename
+				... on WebhookHttpEndpoint {
+				  callbackUrl
+				}
+				... on WebhookEventBridgeEndpoint{
+				  arn
+				}
+			  }
+			  callbackUrl
+			  format
+			  topic
+			  includeFields
+			  createdAt
+			  updatedAt
+			}
+		  }
+		  pageInfo {
+			hasNextPage
+		  }
+		}
+	  }`
 
 	var (
-		cursor graphql.String
+		cursor string
 		vars   = map[string]interface{}{
 			"first":  200,
 			"topics": topics,
@@ -281,7 +130,7 @@ func (w WebhookServiceOp) ListWebhookSubscriptions(topics []WebhookSubscriptionT
 	for {
 		var (
 			query string
-			out   QueryRoot
+			out   model.QueryRoot
 		)
 		if cursor != "" {
 			vars["after"] = cursor
