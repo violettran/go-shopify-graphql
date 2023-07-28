@@ -74,7 +74,6 @@ var collectionSingleQuery = `
   descriptionHtml
   templateSuffix
   productsCount
-  publicationCount
   seo {
     description
     title
@@ -98,7 +97,6 @@ var collectionSingleQueryWithCursor = `
   descriptionHtml
   templateSuffix
   productsCount
-  publicationCount
   seo {
     description
     title
@@ -125,10 +123,9 @@ var collectionBulkQuery = `
 	descriptionHtml
 	templateSuffix
 	productsCount
-	publicationCount
 	seo{
-	  description
-	  title
+		description
+		title
 	}
 	image {
 		altText
@@ -148,10 +145,9 @@ var collectionWithProductsBulkQuery = `
 	descriptionHtml
 	templateSuffix
 	productsCount
-	publicationCount
 	seo{
-	  description
-	  title
+		description
+		title
 	}
 	image {
 		altText
