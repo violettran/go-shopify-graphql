@@ -20,9 +20,9 @@ type ProductService interface {
 	GetSingleProductVariant(id string, cursor string) (*model.Product, error)
 	GetSingleProduct(id string) (*model.Product, error)
 
-	Create(product model.ProductInput, media []model.CreateMediaInput) error
-	Update(product model.ProductInput) error
-	Delete(product model.ProductDeleteInput) error
+	Create(product model.ProductInput, media []model.CreateMediaInput) (output *model.Product, err error)
+	Update(product model.ProductInput) (output *model.Product, err error)
+	Delete(product model.ProductDeleteInput) (deletedID *string, err error)
 }
 
 type ProductServiceOp struct {
@@ -32,30 +32,15 @@ type ProductServiceOp struct {
 var _ ProductService = &ProductServiceOp{}
 
 type mutationProductCreate struct {
-	ProductCreateResult productCreateResult `graphql:"productCreate(input: $input, media: $media)" json:"productCreate"`
+	ProductCreateResult model.ProductCreatePayload `graphql:"productCreate(input: $input, media: $media)" json:"productCreate"`
 }
 
 type mutationProductUpdate struct {
-	ProductUpdateResult productUpdateResult `graphql:"productUpdate(input: $input)" json:"productUpdate"`
+	ProductUpdateResult model.ProductUpdatePayload `graphql:"productUpdate(input: $input)" json:"productUpdate"`
 }
 
 type mutationProductDelete struct {
-	ProductDeleteResult productDeleteResult `graphql:"productDelete(input: $input)" json:"productDelete"`
-}
-
-type productCreateResult struct {
-	Product    *model.Product    `json:"product,omitempty"`
-	UserErrors []model.UserError `json:"userErrors,omitempty"`
-}
-
-type productUpdateResult struct {
-	Product    *model.Product `json:"product,omitempty"`
-	UserErrors []UserErrors   `json:"userErrors"`
-}
-
-type productDeleteResult struct {
-	ID         string       `json:"deletedProductId,omitempty"`
-	UserErrors []UserErrors `json:"userErrors"`
+	ProductDeleteResult model.ProductDeletePayload `graphql:"productDelete(input: $input)" json:"productDelete"`
 }
 
 const productBaseQuery = `
@@ -629,63 +614,66 @@ func (s *ProductServiceOp) GetSingleProduct(id string) (*model.Product, error) {
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) Create(product model.ProductInput, media []model.CreateMediaInput) error {
+func (s *ProductServiceOp) Create(product model.ProductInput, media []model.CreateMediaInput) (output *model.Product, err error) {
 	m := mutationProductCreate{}
 
 	vars := map[string]interface{}{
 		"input": product,
 		"media": media,
 	}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
+	err = utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(m.ProductCreateResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.ProductCreateResult.UserErrors)
+		err = fmt.Errorf("%+v", m.ProductCreateResult.UserErrors)
+		return
 	}
 
-	return nil
+	return m.ProductCreateResult.Product, nil
 }
 
-func (s *ProductServiceOp) Update(product model.ProductInput) error {
+func (s *ProductServiceOp) Update(product model.ProductInput) (output *model.Product, err error) {
 	m := mutationProductUpdate{}
 
 	vars := map[string]interface{}{
 		"input": product,
 	}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
+	err = utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(m.ProductUpdateResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.ProductUpdateResult.UserErrors)
+		err = fmt.Errorf("%+v", m.ProductUpdateResult.UserErrors)
+		return
 	}
 
-	return nil
+	return m.ProductUpdateResult.Product, nil
 }
 
-func (s *ProductServiceOp) Delete(product model.ProductDeleteInput) error {
+func (s *ProductServiceOp) Delete(product model.ProductDeleteInput) (deletedID *string, err error) {
 	m := mutationProductDelete{}
 
 	vars := map[string]interface{}{
 		"input": product,
 	}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
+	err = utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(m.ProductDeleteResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.ProductDeleteResult.UserErrors)
+		err = fmt.Errorf("%+v", m.ProductDeleteResult.UserErrors)
+		return
 	}
 
-	return nil
+	return m.ProductDeleteResult.DeletedProductID, nil
 }

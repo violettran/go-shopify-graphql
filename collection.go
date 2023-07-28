@@ -20,10 +20,10 @@ type CollectionService interface {
 	Get(id string) (*model.Collection, error)
 	GetSingleCollection(id string, cursor string) (*model.Collection, error)
 
-	Create(collection model.CollectionInput) (string, error)
+	Create(collection model.CollectionInput) (output *model.Collection, err error)
 	CreateBulk(collections []model.CollectionInput) error
 
-	Update(collection model.CollectionInput) error
+	Update(collection model.CollectionInput) (output *model.Collection, err error)
 }
 
 type CollectionServiceOp struct {
@@ -33,18 +33,11 @@ type CollectionServiceOp struct {
 var _ CollectionService = &CollectionServiceOp{}
 
 type mutationCollectionCreate struct {
-	CollectionCreateResult CollectionCreateResult `graphql:"collectionCreate(input: $input)" json:"collectionCreate"`
+	CollectionCreateResult model.CollectionCreatePayload `graphql:"collectionCreate(input: $input)" json:"collectionCreate"`
 }
 
 type mutationCollectionUpdate struct {
-	CollectionCreateResult CollectionCreateResult `graphql:"collectionUpdate(input: $input)" json:"collectionUpdate"`
-}
-
-type CollectionCreateResult struct {
-	Collection struct {
-		ID string `json:"id,omitempty"`
-	}
-	UserErrors []UserErrors
+	CollectionCreateResult model.CollectionUpdatePayload `graphql:"collectionUpdate(input: $input)" json:"collectionUpdate"`
 }
 
 var collectionQuery = `
@@ -392,44 +385,44 @@ func (s *CollectionServiceOp) CreateBulk(collections []model.CollectionInput) er
 	return nil
 }
 
-func (s *CollectionServiceOp) Create(collection model.CollectionInput) (string, error) {
-	var id string
+func (s *CollectionServiceOp) Create(collection model.CollectionInput) (output *model.Collection, err error) {
 	m := mutationCollectionCreate{}
 
 	vars := map[string]interface{}{
 		"input": collection,
 	}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
+	err = utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
-		return id, err
+		return
 	}
 
 	if len(m.CollectionCreateResult.UserErrors) > 0 {
-		return id, fmt.Errorf("%+v", m.CollectionCreateResult.UserErrors)
+		err = fmt.Errorf("%+v", m.CollectionCreateResult.UserErrors)
+		return
 	}
 
-	id = m.CollectionCreateResult.Collection.ID
-	return id, nil
+	return m.CollectionCreateResult.Collection, nil
 }
 
-func (s *CollectionServiceOp) Update(collection model.CollectionInput) error {
+func (s *CollectionServiceOp) Update(collection model.CollectionInput) (output *model.Collection, err error) {
 	m := mutationCollectionUpdate{}
 
 	vars := map[string]interface{}{
 		"input": collection,
 	}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
+	err = utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(m.CollectionCreateResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.CollectionCreateResult.UserErrors)
+		err = fmt.Errorf("%+v", m.CollectionCreateResult.UserErrors)
+		return
 	}
 
-	return nil
+	return m.CollectionCreateResult.Collection, nil
 }
