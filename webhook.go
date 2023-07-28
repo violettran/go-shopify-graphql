@@ -9,7 +9,7 @@ import (
 
 type WebhookService interface {
 	NewWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
-	NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
+	NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.EventBridgeWebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
 
 	ListWebhookSubscriptions(topics []model.WebhookSubscriptionTopic) (output []*model.WebhookSubscription, err error)
 	DeleteWebhook(webhookID string) (deletedID *string, err error)
@@ -52,7 +52,7 @@ func (w WebhookServiceOp) NewWebhookSubscription(topic model.WebhookSubscription
 	return m.WebhookCreateResult.WebhookSubscription, nil
 }
 
-func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
+func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.EventBridgeWebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
 	m := mutationEventBridgeWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic,
