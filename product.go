@@ -258,6 +258,7 @@ var productBulkQuery = fmt.Sprintf(`
 	media {
 		edges {
 			node {
+				__typename
 				mediaContentType
 				...on MediaImage {
 					id
