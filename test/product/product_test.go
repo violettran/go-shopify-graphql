@@ -189,6 +189,7 @@ var _ = Describe("ProductService", func() {
 var mediaQuery = `media(first: 10) {
 	edges {
 		node {
+			__typename
 			mediaContentType
 			...on MediaImage {
 				id

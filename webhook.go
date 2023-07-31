@@ -26,50 +26,86 @@ type mutationWebhookCreate struct {
 }
 
 type mutationWebhookDelete struct {
-	WebhookDeleteResult *model.WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionCreate"`
+	WebhookDeleteResult *model.WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionDelete"`
 }
 
 type mutationEventBridgeWebhookCreate struct {
 	EventBridgeWebhookCreateResult *model.EventBridgeWebhookSubscriptionCreatePayload `graphql:"eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"eventBridgeWebhookSubscriptionCreate"`
 }
 
+// NOTE: Have to use this because writeQuery function will not write structs that implements UnmarshalJSON function
+const webhookSubscriptionCreateSelects = `
+userErrors {
+	field
+	message
+}
+webhookSubscription {
+	callbackUrl
+	createdAt
+	format
+	id
+	includeFields
+	legacyResourceId
+	metafieldNamespaces
+	privateMetafieldNamespaces
+	topic
+	updatedAt
+	endpoint {
+		__typename
+		...on WebhookEventBridgeEndpoint {
+			arn
+		}
+		...on WebhookHttpEndpoint {
+			callbackUrl
+		}
+	}
+}`
+
 func (w WebhookServiceOp) NewWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
-	m := mutationWebhookCreate{}
+	m := fmt.Sprintf(`mutation($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+	webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+		%s
+	}}`, webhookSubscriptionCreateSelects)
+	v := mutationWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic,
 		"webhookSubscription": input,
 	}
-	err = w.client.gql.Mutate(context.Background(), &m, vars)
+	err = w.client.gql.MutateString(context.Background(), m, vars, &v)
 	if err != nil {
 		return
 	}
 
-	if len(m.WebhookCreateResult.UserErrors) > 0 {
-		err = fmt.Errorf("%+v", m.WebhookCreateResult.UserErrors)
+	if len(v.WebhookCreateResult.UserErrors) > 0 {
+		err = fmt.Errorf("%+v", v.WebhookCreateResult.UserErrors)
 		return
 	}
 
-	return m.WebhookCreateResult.WebhookSubscription, nil
+	return v.WebhookCreateResult.WebhookSubscription, nil
 }
 
 func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.EventBridgeWebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
-	m := mutationEventBridgeWebhookCreate{}
+	m := fmt.Sprintf(`mutation($topic: WebhookSubscriptionTopic!, $webhookSubscription: EventBridgeWebhookSubscriptionInput!) {
+	eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+		%s
+	}}`, webhookSubscriptionCreateSelects)
+	v := mutationEventBridgeWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic,
 		"webhookSubscription": input,
 	}
 
-	err = w.client.gql.Mutate(context.Background(), &m, vars)
+	err = w.client.gql.MutateString(context.Background(), m, vars, &v)
 	if err != nil {
 		return
 	}
 
-	if len(m.EventBridgeWebhookCreateResult.UserErrors) > 0 {
-		err = fmt.Errorf("%+v", m.EventBridgeWebhookCreateResult.UserErrors)
+	if len(v.EventBridgeWebhookCreateResult.UserErrors) > 0 {
+		err = fmt.Errorf("%+v", v.EventBridgeWebhookCreateResult.UserErrors)
 		return
 	}
 
-	return m.EventBridgeWebhookCreateResult.WebhookSubscription, nil
+	return v.EventBridgeWebhookCreateResult.WebhookSubscription, nil
 }
 
 func (w WebhookServiceOp) DeleteWebhook(webhookID string) (deletedID *string, err error) {

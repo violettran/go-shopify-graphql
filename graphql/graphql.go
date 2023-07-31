@@ -73,6 +73,13 @@ func (c *Client) Mutate(ctx context.Context, m interface{}, variables map[string
 	return c.do(ctx, query, variables, m)
 }
 
+// MutateString executes a single GraphQL mutation request,
+// using the given raw query `m` and populating the response into it.
+// `m` should be a correct GraphQL mutation request string that corresponds to the GraphQL schema.
+func (c *Client) MutateString(ctx context.Context, m string, variables map[string]interface{}, v interface{}) error {
+	return c.do(ctx, m, variables, v)
+}
+
 // do executes a single GraphQL operation.
 func (c *Client) do(ctx context.Context, query string, variables map[string]interface{}, v interface{}) error {
 	if c.ctx != nil {
