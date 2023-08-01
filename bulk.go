@@ -105,7 +105,10 @@ func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(id *string) (*strin
 		return nil, fmt.Errorf("bulk operation ID doesn't match, got=%v, want=%v", q.ID, id)
 	}
 
-	q, _ = s.WaitForCurrentBulkQuery(1 * time.Second)
+	q, err = s.WaitForCurrentBulkQuery(1 * time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("waiting for current bulk operation: %w", err)
+	}
 	if q.Status != model.BulkOperationStatusCompleted {
 		return nil, fmt.Errorf("bulk operation didn't complete, status=%s, error_code=%s", q.Status, q.ErrorCode)
 	}
