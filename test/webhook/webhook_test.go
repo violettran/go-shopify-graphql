@@ -5,7 +5,6 @@ import (
 
 	"github.com/gempages/go-shopify-graphql"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -20,10 +19,7 @@ var _ = Describe("WebhookService", func() {
 	BeforeEach(func() {
 		domain = os.Getenv("SHOPIFY_SHOP_DOMAIN")
 		token = os.Getenv("SHOPIFY_API_TOKEN")
-		opts := []shopifyGraph.Option{
-			shopifyGraph.WithToken(token),
-		}
-		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
+		shopifyClient = shopify.NewClientWithToken(token, domain)
 	})
 
 	Describe("NewWebhookSubscription", func() {

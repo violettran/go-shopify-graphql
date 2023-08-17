@@ -10,9 +10,9 @@ import (
 type WebhookService interface {
 	NewWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
 	NewEventBridgeWebhookSubscription(topic model.WebhookSubscriptionTopic, input model.EventBridgeWebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
-
 	ListWebhookSubscriptions(topics []model.WebhookSubscriptionTopic) (output []*model.WebhookSubscription, err error)
 	DeleteWebhook(webhookID string) (deletedID *string, err error)
+	UpdateWebhookSubscription(webhookID string, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error)
 }
 
 type WebhookServiceOp struct {
@@ -25,6 +25,10 @@ type mutationWebhookCreate struct {
 	WebhookCreateResult *model.WebhookSubscriptionCreatePayload `graphql:"webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription)" json:"webhookSubscriptionCreate"`
 }
 
+type mutationWebhookUpdate struct {
+	WebhookUpdateResult *model.WebhookSubscriptionUpdatePayload `graphql:"webhookSubscriptionUpdate(id: $id, webhookSubscription: $webhookSubscription)" json:"webhookSubscriptionUpdate"`
+}
+
 type mutationWebhookDelete struct {
 	WebhookDeleteResult *model.WebhookSubscriptionDeletePayload `graphql:"webhookSubscriptionDelete(id: $id)" json:"webhookSubscriptionDelete"`
 }
@@ -34,12 +38,17 @@ type mutationEventBridgeWebhookCreate struct {
 }
 
 // NOTE: Have to use this because writeQuery function will not write structs that implements UnmarshalJSON function
-const webhookSubscriptionCreateSelects = `
+const webhookSubscriptionMutationSelects = `
 userErrors {
 	field
 	message
 }
 webhookSubscription {
+	apiVersion {
+		displayName
+		handle
+		supported
+	}
 	callbackUrl
 	createdAt
 	format
@@ -65,7 +74,7 @@ func (w WebhookServiceOp) NewWebhookSubscription(topic model.WebhookSubscription
 	m := fmt.Sprintf(`mutation($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
 	webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
 		%s
-	}}`, webhookSubscriptionCreateSelects)
+	}}`, webhookSubscriptionMutationSelects)
 	v := mutationWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic,
@@ -88,7 +97,7 @@ func (w WebhookServiceOp) NewEventBridgeWebhookSubscription(topic model.WebhookS
 	m := fmt.Sprintf(`mutation($topic: WebhookSubscriptionTopic!, $webhookSubscription: EventBridgeWebhookSubscriptionInput!) {
 	eventBridgeWebhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
 		%s
-	}}`, webhookSubscriptionCreateSelects)
+	}}`, webhookSubscriptionMutationSelects)
 	v := mutationEventBridgeWebhookCreate{}
 	vars := map[string]interface{}{
 		"topic":               topic,
@@ -128,33 +137,38 @@ func (w WebhookServiceOp) DeleteWebhook(webhookID string) (deletedID *string, er
 func (w WebhookServiceOp) ListWebhookSubscriptions(topics []model.WebhookSubscriptionTopic) (output []*model.WebhookSubscription, err error) {
 	queryFormat := `query webhookSubscriptions($first: Int!, $topics: [WebhookSubscriptionTopic!]%s) {
 		webhookSubscriptions(first: $first, topics: $topics%s) {
-		  edges {
-			cursor
-			node {
-			  id,
-			  topic,
-			  endpoint {
-				__typename
-				... on WebhookHttpEndpoint {
-				  callbackUrl
+			edges {
+				cursor
+				node {
+					id
+					topic
+					apiVersion {
+						displayName
+						handle
+						supported
+					}
+					endpoint {
+						__typename
+						... on WebhookHttpEndpoint {
+							callbackUrl
+						}
+						... on WebhookEventBridgeEndpoint{
+							arn
+						}
+					}
+					callbackUrl
+					format
+					topic
+					includeFields
+					createdAt
+					updatedAt
 				}
-				... on WebhookEventBridgeEndpoint{
-				  arn
-				}
-			  }
-			  callbackUrl
-			  format
-			  topic
-			  includeFields
-			  createdAt
-			  updatedAt
 			}
-		  }
-		  pageInfo {
-			hasNextPage
-		  }
+			pageInfo {
+				hasNextPage
+			}
 		}
-	  }`
+	}`
 
 	var (
 		cursor string
@@ -188,4 +202,27 @@ func (w WebhookServiceOp) ListWebhookSubscriptions(topics []model.WebhookSubscri
 		}
 	}
 	return
+}
+
+func (w WebhookServiceOp) UpdateWebhookSubscription(webhookID string, input model.WebhookSubscriptionInput) (output *model.WebhookSubscription, err error) {
+	m := fmt.Sprintf(`mutation webhookSubscriptionUpdate($id: ID!, $webhookSubscription: WebhookSubscriptionInput!) {
+	webhookSubscriptionUpdate(id: $id, webhookSubscription: $webhookSubscription) {
+		%s
+	}}`, webhookSubscriptionMutationSelects)
+	v := mutationWebhookUpdate{}
+	vars := map[string]interface{}{
+		"id":                  webhookID,
+		"webhookSubscription": input,
+	}
+	err = w.client.gql.MutateString(context.Background(), m, vars, &v)
+	if err != nil {
+		return
+	}
+
+	if len(v.WebhookUpdateResult.UserErrors) > 0 {
+		err = fmt.Errorf("%+v", v.WebhookUpdateResult.UserErrors)
+		return
+	}
+
+	return v.WebhookUpdateResult.WebhookSubscription, nil
 }
