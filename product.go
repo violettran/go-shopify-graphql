@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/utils"
 )
@@ -484,6 +485,10 @@ func (s *ProductServiceOp) getPage(id string, cursor string) (*model.Product, er
 		return nil, err
 	}
 
+	if out.Product == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+	}
+
 	return out.Product, nil
 }
 
@@ -508,6 +513,10 @@ func (s *ProductServiceOp) GetWithFields(id string, fields string) (*model.Produ
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if out.Product == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
 	}
 
 	return out.Product, nil
@@ -548,6 +557,10 @@ func (s *ProductServiceOp) GetSingleProductCollection(id string, cursor string) 
 		return nil, err
 	}
 
+	if out.Product == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+	}
+
 	return out.Product, nil
 }
 
@@ -586,6 +599,10 @@ func (s *ProductServiceOp) GetSingleProductVariant(id string, cursor string) (*m
 		return nil, err
 	}
 
+	if out.Product == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+	}
+
 	return out.Product, nil
 }
 
@@ -610,6 +627,10 @@ func (s *ProductServiceOp) GetSingleProduct(id string) (*model.Product, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if out.Product == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
 	}
 
 	return out.Product, nil
