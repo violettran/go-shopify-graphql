@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/gempages/go-shopify-graphql/utils"
@@ -333,6 +334,10 @@ func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*model.Coll
 		return nil, err
 	}
 
+	if out.Collection == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found", nil)
+	}
+
 	return out.Collection, nil
 }
 
@@ -369,6 +374,10 @@ func (s *CollectionServiceOp) GetSingleCollection(id string, cursor string) (*mo
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if out.Collection == nil {
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found", nil)
 	}
 
 	return out.Collection, nil
