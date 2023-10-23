@@ -31,6 +31,7 @@ type Client struct {
 	Metafield     MetafieldService
 	BulkOperation BulkOperationService
 	Webhook       WebhookService
+	File          FileService
 }
 
 type ListOptions struct {
@@ -72,6 +73,7 @@ func NewClient(apiKey string, password string, storeName string) *Client {
 	c.Metafield = &MetafieldServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
+	c.File = &FileServiceOp{client: c}
 
 	return c
 }
@@ -108,6 +110,7 @@ func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
 	c.Metafield = &MetafieldServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
+	c.File = &FileServiceOp{client: c}
 
 	return c
 }
