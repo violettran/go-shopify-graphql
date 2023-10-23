@@ -16,7 +16,7 @@ import (
 )
 
 type FileService interface {
-	Create(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error)
+	Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
 }
 
@@ -87,7 +87,7 @@ const queryGenericFile = `
 		}
 	`
 
-func (s *FileServiceOp) Create(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error) {
+func (s *FileServiceOp) Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error) {
 
 	fileSize := len(fileContent)
 	stageCreated, err := s.stagedUploadsCreate(cast.ToString(fileSize), fileName, mimetype)
