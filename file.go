@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
@@ -27,36 +26,11 @@ type FileServiceOp struct {
 var _ FileService = &FileServiceOp{}
 
 type mutationStagedUploadsCreate struct {
-	StagedUploadsCreate model.StagedUploadsCreatePayload `graphql:"stagedUploadsCreate(input: $input)" json:"stagedUploadsCreate"`
+	StagedUploadsCreateResult model.StagedUploadsCreatePayload `graphql:"stagedUploadsCreate(input: $input)" json:"stagedUploadsCreate"`
 }
 
 type mutationFileCreate struct {
-	FileCreate FileCreatePayload `graphql:"fileCreate(files: $files)" json:"fileCreate"`
-}
-
-type FileCreatePayload struct {
-	Files      []File                 `json:"files,omitempty,omitempty"`
-	UserErrors []model.FilesUserError `json:"userErrors,omitempty"`
-}
-
-type File struct {
-	CreatedAt time.Time `json:"createdAt,omitempty"`
-	// Any errors that have occurred on the file.
-	FileErrors []model.FileError `json:"fileErrors,omitempty"`
-	// The status of the file.
-	FileStatus model.FileStatus `json:"fileStatus,omitempty"`
-	// A globally-unique ID.
-	ID string `json:"id"`
-}
-
-type FileConnection struct {
-	Edges    []FileEdge          `json:"edges"`
-	Nodes    []model.GenericFile `json:"nodes,omitempty"`
-	PageInfo *model.PageInfo     `json:"pageInfo,omitempty"`
-}
-
-type FileEdge struct {
-	Node model.GenericFile `json:"node"`
+	FileCreateResult model.FileCreatePayload `graphql:"fileCreate(files: $files)" json:"fileCreate"`
 }
 
 const fileFieldName = "file"
@@ -88,16 +62,15 @@ const queryGenericFile = `
 	`
 
 func (s *FileServiceOp) Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error) {
-
 	fileSize := len(fileContent)
 	stageCreated, err := s.stagedUploadsCreate(cast.ToString(fileSize), fileName, mimetype)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("s.stagedUploadsCreate: %w", err)
 	}
 
 	err = s.uploadFileToStage(ctx, fileContent, fileSize, fileName, stageCreated)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
 
 	result, err := s.fileCreate(ctx, stageCreated)
@@ -105,7 +78,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, fileContent []byte, fileName
 		return nil, fmt.Errorf("s.fileCreate: %w", err)
 	}
 
-	fileInfo, err := s.QueryGenericFile(ctx, result.Files[0].ID)
+	fileInfo, err := s.QueryGenericFile(ctx, result.Files[0].GetID())
 	if err != nil {
 		return nil, fmt.Errorf("s.QueryGenericFile: %w", err)
 	}
@@ -132,11 +105,11 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 		return nil, fmt.Errorf("gql.Mutate: %w", err)
 	}
 
-	if len(m.StagedUploadsCreate.UserErrors) > 0 {
-		return nil, fmt.Errorf("%+v", m.StagedUploadsCreate.UserErrors)
+	if len(m.StagedUploadsCreateResult.UserErrors) > 0 {
+		return nil, fmt.Errorf("%+v", m.StagedUploadsCreateResult.UserErrors)
 	}
 
-	return &m.StagedUploadsCreate.StagedTargets[0], nil
+	return &m.StagedUploadsCreateResult.StagedTargets[0], nil
 }
 
 func (s *FileServiceOp) uploadFileToStage(
@@ -149,6 +122,7 @@ func (s *FileServiceOp) uploadFileToStage(
 	// Create a multipart form and add parameters
 	form := &bytes.Buffer{}
 	writer := multipart.NewWriter(form)
+	defer writer.Close()
 
 	for _, param := range stageCreated.Parameters {
 		writer.WriteField(param.Name, param.Value)
@@ -163,7 +137,6 @@ func (s *FileServiceOp) uploadFileToStage(
 	if err != nil {
 		return err
 	}
-	writer.Close()
 
 	// Perform the POST request to the temp target
 	postTempTargetURL := stageCreated.URL
@@ -180,8 +153,13 @@ func (s *FileServiceOp) uploadFileToStage(
 	return nil
 }
 
-func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.StagedMediaUploadTarget) (*FileCreatePayload, error) {
-	m := mutationFileCreate{}
+func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.StagedMediaUploadTarget) (*model.FileCreatePayload, error) {
+	out := mutationFileCreate{
+		FileCreateResult: model.FileCreatePayload{
+			Files: []model.File{&model.GenericFile{}},
+		},
+	}
+
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
@@ -190,23 +168,45 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.Stag
 		},
 	}
 
-	err := s.client.gql.Mutate(ctx, &m, vars)
+	m := `
+	mutation fileCreate($files: [FileCreateInput!]!) {
+		fileCreate(files: $files) {
+			files {
+				id
+				alt
+				fileStatus
+			}
+			userErrors {
+				field
+				message
+			}
+		}
+	}
+	`
+
+	err := s.client.gql.MutateString(ctx, m, vars, &out)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(m.FileCreate.UserErrors) > 0 {
-		return nil, fmt.Errorf("%+v", m.FileCreate.UserErrors)
+	if len(out.FileCreateResult.UserErrors) > 0 {
+		return nil, fmt.Errorf("%+v", out.FileCreateResult.UserErrors)
 	}
 
-	return &m.FileCreate, nil
+	return &out.FileCreateResult, nil
 }
 
 func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
 	id := getShopifyID(fileID)
 	out := struct {
-		Files *FileConnection `json:"files"`
-	}{}
+		Files *model.FileConnection `json:"files"`
+	}{
+		Files: &model.FileConnection{
+			Edges: []model.FileEdge{
+				{Node: model.File(&model.GenericFile{})},
+			},
+		},
+	}
 
 	vars := map[string]interface{}{
 		"query": graphql.String(id),
@@ -220,11 +220,11 @@ func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*m
 		return nil, fmt.Errorf("file is not found")
 	}
 
-	if len(out.Files.Edges[0].Node.FileErrors) > 0 {
-		return nil, fmt.Errorf("%+v", out.Files.Edges[0].Node.FileErrors)
+	if len(out.Files.Edges[0].Node.GetFileErrors()) > 0 {
+		return nil, fmt.Errorf("%+v", out.Files.Edges[0].Node.GetFileErrors())
 	}
 
-	return &out.Files.Edges[0].Node, nil
+	return out.Files.Edges[0].Node.(*model.GenericFile), nil
 }
 
 func getShopifyID(shopifyBaseID string) string {
