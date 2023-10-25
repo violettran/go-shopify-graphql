@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
@@ -197,7 +196,6 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.Stag
 }
 
 func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
-	id := getShopifyID(fileID)
 	out := struct {
 		Files *model.FileConnection `json:"files"`
 	}{
@@ -209,7 +207,7 @@ func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*m
 	}
 
 	vars := map[string]interface{}{
-		"query": graphql.String(id),
+		"query": graphql.String(fileID),
 	}
 	err := s.client.gql.QueryString(ctx, queryGenericFile, vars, &out)
 	if err != nil {
@@ -225,10 +223,6 @@ func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*m
 	}
 
 	return out.Files.Edges[0].Node.(*model.GenericFile), nil
-}
-
-func getShopifyID(shopifyBaseID string) string {
-	return strings.Replace(shopifyBaseID, "gid://shopify/GenericFile/", "", 0)
 }
 
 func performHTTPPostWithHeaders(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
