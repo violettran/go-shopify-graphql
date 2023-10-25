@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/spf13/cast"
@@ -16,6 +17,7 @@ import (
 type FileService interface {
 	Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
+	Delete(ctx context.Context, fileID []graphql.ID) ([]string, error)
 }
 
 type FileServiceOp struct {
@@ -30,6 +32,10 @@ type mutationStagedUploadsCreate struct {
 
 type mutationFileCreate struct {
 	FileCreateResult model.FileCreatePayload `graphql:"fileCreate(files: $files)" json:"fileCreate"`
+}
+
+type mutationFileDelete struct {
+	FileDeleteResult model.FileDeletePayload `graphql:"fileDelete(fileIds: $fileIds)" json:"fileDelete"`
 }
 
 const fileFieldName = "file"
@@ -111,10 +117,8 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 	return &m.StagedUploadsCreateResult.StagedTargets[0], nil
 }
 
-func (s *FileServiceOp) uploadFileToStage(
-	ctx context.Context, file []byte, fileSize int, fileName string, stageCreated *model.StagedMediaUploadTarget,
-) error {
-
+func (s *FileServiceOp) createMultipartFormWithFile(
+	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipart.Writer, *bytes.Buffer, error) {
 	// Create a buffer to store the file contents
 	fileBuffer := bytes.NewBuffer(file)
 
@@ -122,7 +126,6 @@ func (s *FileServiceOp) uploadFileToStage(
 	form := &bytes.Buffer{}
 	writer := multipart.NewWriter(form)
 	defer writer.Close()
-
 	for _, param := range stageCreated.Parameters {
 		writer.WriteField(param.Name, param.Value)
 	}
@@ -130,11 +133,23 @@ func (s *FileServiceOp) uploadFileToStage(
 	// Add the file to the form
 	fileWriter, err := writer.CreateFormFile(fileFieldName, fileName)
 	if err != nil {
-		return fmt.Errorf("writer.CreateFormFile: %w", err)
+		return nil, nil, fmt.Errorf("writer.CreateFormFile: %w", err)
 	}
 	_, err = io.Copy(fileWriter, fileBuffer)
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("io.Copy: %w", err)
+	}
+
+	return writer, form, nil
+}
+
+func (s *FileServiceOp) uploadFileToStage(
+	ctx context.Context, file []byte, fileSize int, fileName string, stageCreated *model.StagedMediaUploadTarget,
+) error {
+
+	writer, form, err := s.createMultipartFormWithFile(file, fileName, stageCreated)
+	if err != nil {
+		return fmt.Errorf("s.createMultipartFormWithFile: %w", err)
 	}
 
 	// Perform the POST request to the temp target
@@ -225,6 +240,24 @@ func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*m
 	return out.Files.Edges[0].Node.(*model.GenericFile), nil
 }
 
+func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]string, error) {
+	m := mutationFileDelete{}
+	vars := map[string]interface{}{
+		"fileIds": fileID,
+	}
+
+	err := s.client.gql.Mutate(ctx, &m, vars)
+	if err != nil {
+		return nil, fmt.Errorf("gql.Mutate: %w", err)
+	}
+
+	if len(m.FileDeleteResult.UserErrors) > 0 {
+		return nil, fmt.Errorf("%+v", m.FileDeleteResult.UserErrors)
+	}
+
+	return m.FileDeleteResult.DeletedFileIds, nil
+}
+
 func performHTTPPostWithHeaders(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -240,6 +273,11 @@ func performHTTPPostWithHeaders(ctx context.Context, url string, body io.Reader,
 		return fmt.Errorf("DefaultClient.Do: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		bodyContent, _ := io.ReadAll(resp.Body)
+		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-201 Created status code: %v", resp.Status), map[string]any{"body": string(bodyContent)})
+	}
 
 	return nil
 }
