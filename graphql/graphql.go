@@ -15,6 +15,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+const MaxCostExceeded = "MAX_COST_EXCEEDED"
+
 // Client is a GraphQL client.
 type Client struct {
 	url        string // GraphQL server URL.
@@ -117,6 +119,12 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusPaymentRequired {
+		return ErrPaymentRequired
+	}
+	if resp.StatusCode == http.StatusLocked {
+		return ErrLocked
+	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": string(body)})
@@ -140,6 +148,11 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 		}
 	}
 	if len(out.Errors) > 0 {
+		for _, e := range out.Errors {
+			if e.Extensions.Code == MaxCostExceeded {
+				return ErrMaxCostExceeded
+			}
+		}
 		return out.Errors
 	}
 	return nil
@@ -150,7 +163,13 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 //
 // Specification: https://facebook.github.io/graphql/#sec-Errors.
 type graphErrors []struct {
-	Message   string
+	Message    string
+	Extensions struct {
+		Code          string
+		Cost          int
+		MaxCost       int `json:"maxCost"`
+		Documentation string
+	}
 	Locations []struct {
 		Line   int
 		Column int
