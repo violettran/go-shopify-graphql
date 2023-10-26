@@ -38,7 +38,7 @@ type mutationFileDelete struct {
 	FileDeleteResult model.FileDeletePayload `graphql:"fileDelete(fileIds: $fileIds)" json:"fileDelete"`
 }
 
-type createMultipartFormWithFileResult struct {
+type multipartFormWithFile struct {
 	contentType string
 	data        *bytes.Buffer
 }
@@ -77,7 +77,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, fileContent []byte, fileName
 		return nil, fmt.Errorf("s.stagedUploadsCreate: %w", err)
 	}
 
-	err = s.uploadFileToStage(ctx, fileContent, fileSize, fileName, stageCreated)
+	err = s.uploadFileToStage(ctx, fileContent, fileName, stageCreated)
 	if err != nil {
 		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
@@ -122,7 +122,7 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 }
 
 func (s *FileServiceOp) uploadFileToStage(
-	ctx context.Context, file []byte, fileSize int, fileName string, stageCreated *model.StagedMediaUploadTarget,
+	ctx context.Context, file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget,
 ) error {
 
 	multiForm, err := createMultipartFormWithFile(file, fileName, stageCreated)
@@ -134,7 +134,7 @@ func (s *FileServiceOp) uploadFileToStage(
 	postTempTargetURL := stageCreated.URL
 	postTempTargetHeaders := map[string]string{
 		"Content-Type":   multiForm.contentType,
-		"Content-Length": cast.ToString(fileSize),
+		"Content-Length": cast.ToString(len(file)),
 	}
 
 	err = performHTTPPostWithHeaders(ctx, *postTempTargetURL, multiForm.data, postTempTargetHeaders)
@@ -228,7 +228,7 @@ func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]stri
 }
 
 func createMultipartFormWithFile(
-	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*createMultipartFormWithFileResult, error) {
+	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipartFormWithFile, error) {
 	// Create a buffer to store the file contents
 	fileBuffer := bytes.NewBuffer(file)
 
@@ -250,7 +250,7 @@ func createMultipartFormWithFile(
 		return nil, fmt.Errorf("io.Copy: %w", err)
 	}
 
-	return &createMultipartFormWithFileResult{
+	return &multipartFormWithFile{
 		contentType: writer.FormDataContentType(),
 		data:        form,
 	}, nil
