@@ -38,6 +38,11 @@ type mutationFileDelete struct {
 	FileDeleteResult model.FileDeletePayload `graphql:"fileDelete(fileIds: $fileIds)" json:"fileDelete"`
 }
 
+type createMultipartFormWithFileResult struct {
+	contentType string
+	data        *bytes.Buffer
+}
+
 const fileFieldName = "file"
 const queryGenericFile = `
 		query files($query: String!) {
@@ -45,12 +50,10 @@ const queryGenericFile = `
 				edges {
 					node {
 						id
-						updatedAt
 						fileStatus
 						... on GenericFile {
 							id
 							url
-							updatedAt
 							originalFileSize
 							mimeType
 							fileStatus
@@ -59,6 +62,7 @@ const queryGenericFile = `
 								details
 								message
 							}
+							__typename
 						}
 					}
 				}
@@ -117,37 +121,11 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 	return &m.StagedUploadsCreateResult.StagedTargets[0], nil
 }
 
-func (s *FileServiceOp) createMultipartFormWithFile(
-	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipart.Writer, *bytes.Buffer, error) {
-	// Create a buffer to store the file contents
-	fileBuffer := bytes.NewBuffer(file)
-
-	// Create a multipart form and add parameters
-	form := &bytes.Buffer{}
-	writer := multipart.NewWriter(form)
-	defer writer.Close()
-	for _, param := range stageCreated.Parameters {
-		writer.WriteField(param.Name, param.Value)
-	}
-
-	// Add the file to the form
-	fileWriter, err := writer.CreateFormFile(fileFieldName, fileName)
-	if err != nil {
-		return nil, nil, fmt.Errorf("writer.CreateFormFile: %w", err)
-	}
-	_, err = io.Copy(fileWriter, fileBuffer)
-	if err != nil {
-		return nil, nil, fmt.Errorf("io.Copy: %w", err)
-	}
-
-	return writer, form, nil
-}
-
 func (s *FileServiceOp) uploadFileToStage(
 	ctx context.Context, file []byte, fileSize int, fileName string, stageCreated *model.StagedMediaUploadTarget,
 ) error {
 
-	writer, form, err := s.createMultipartFormWithFile(file, fileName, stageCreated)
+	multiForm, err := createMultipartFormWithFile(file, fileName, stageCreated)
 	if err != nil {
 		return fmt.Errorf("s.createMultipartFormWithFile: %w", err)
 	}
@@ -155,11 +133,11 @@ func (s *FileServiceOp) uploadFileToStage(
 	// Perform the POST request to the temp target
 	postTempTargetURL := stageCreated.URL
 	postTempTargetHeaders := map[string]string{
-		"Content-Type":   writer.FormDataContentType(),
+		"Content-Type":   multiForm.contentType,
 		"Content-Length": cast.ToString(fileSize),
 	}
 
-	err = performHTTPPostWithHeaders(ctx, *postTempTargetURL, form, postTempTargetHeaders)
+	err = performHTTPPostWithHeaders(ctx, *postTempTargetURL, multiForm.data, postTempTargetHeaders)
 	if err != nil {
 		return err
 	}
@@ -168,11 +146,7 @@ func (s *FileServiceOp) uploadFileToStage(
 }
 
 func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.StagedMediaUploadTarget) (*model.FileCreatePayload, error) {
-	out := mutationFileCreate{
-		FileCreateResult: model.FileCreatePayload{
-			Files: []model.File{&model.GenericFile{}},
-		},
-	}
+	out := mutationFileCreate{}
 
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
@@ -189,6 +163,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.Stag
 				id
 				alt
 				fileStatus
+				__typename
 			}
 			userErrors {
 				field
@@ -213,13 +188,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.Stag
 func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
 	out := struct {
 		Files *model.FileConnection `json:"files"`
-	}{
-		Files: &model.FileConnection{
-			Edges: []model.FileEdge{
-				{Node: model.File(&model.GenericFile{})},
-			},
-		},
-	}
+	}{}
 
 	vars := map[string]interface{}{
 		"query": graphql.String(fileID),
@@ -256,6 +225,35 @@ func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]stri
 	}
 
 	return m.FileDeleteResult.DeletedFileIds, nil
+}
+
+func createMultipartFormWithFile(
+	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*createMultipartFormWithFileResult, error) {
+	// Create a buffer to store the file contents
+	fileBuffer := bytes.NewBuffer(file)
+
+	// Create a multipart form and add parameters
+	form := &bytes.Buffer{}
+	writer := multipart.NewWriter(form)
+	defer writer.Close()
+	for _, param := range stageCreated.Parameters {
+		writer.WriteField(param.Name, param.Value)
+	}
+
+	// Add the file to the form
+	fileWriter, err := writer.CreateFormFile(fileFieldName, fileName)
+	if err != nil {
+		return nil, fmt.Errorf("writer.CreateFormFile: %w", err)
+	}
+	_, err = io.Copy(fileWriter, fileBuffer)
+	if err != nil {
+		return nil, fmt.Errorf("io.Copy: %w", err)
+	}
+
+	return &createMultipartFormWithFileResult{
+		contentType: writer.FormDataContentType(),
+		data:        form,
+	}, nil
 }
 
 func performHTTPPostWithHeaders(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
