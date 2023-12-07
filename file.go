@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gempages/go-helper/errors"
@@ -16,8 +17,9 @@ import (
 )
 
 type FileService interface {
-	Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error)
+	Upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
+	QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error)
 	Delete(ctx context.Context, fileID []graphql.ID) ([]string, error)
 }
 
@@ -44,6 +46,17 @@ type multipartFormWithFile struct {
 	data        *bytes.Buffer
 }
 
+// UploadInput
+// In the case of uploading an image via URL, we only need to provide the 'OriginalSource' parameter
+// If you upload an image using 'File' you need to provide all the data except 'OriginalSource'
+type UploadInput struct {
+	Filename       string
+	Mimetype       string
+	OriginalSource *string   // Only for upload Image, use OriginalSource when upload by url
+	File           io.Reader // use File when upload by file
+	FileSize       int64
+}
+
 const fileFieldName = "file"
 const queryGenericFile = `
 		query files($query: String!) {
@@ -65,41 +78,88 @@ const queryGenericFile = `
 							}
 							__typename
 						}
+						... on MediaImage {
+							id
+							image {
+								id
+								originalSrc: url
+								width
+								height
+							}
+							__typename
+						}
 					}
 				}
 			}
 		}
 	`
 
-func (s *FileServiceOp) Upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error) {
-	fileSize := len(fileContent)
-	stageCreated, err := s.stagedUploadsCreate(cast.ToString(fileSize), fileName, mimetype)
+func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
+	file, err := s.queryFile(ctx, fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return file.(*model.GenericFile), nil
+}
+
+func (s *FileServiceOp) QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error) {
+	file, err := s.queryFile(ctx, fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return file.(*model.MediaImage), nil
+}
+
+func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
+	var (
+		fileCreatePayload *model.FileCreatePayload
+		err               error
+	)
+
+	if input.OriginalSource != nil {
+		// upload via url
+		fileCreatePayload, err = s.fileCreate(ctx, *input.OriginalSource)
+		if err != nil {
+			return nil, fmt.Errorf("s.fileCreate: %w", err)
+		}
+	} else {
+		// upload via file
+		fileCreatePayload, err = s.upload(ctx, input)
+		if err != nil {
+			return nil, fmt.Errorf("s.upload: %w", err)
+		}
+	}
+
+	return fileCreatePayload, nil
+}
+
+func (s *FileServiceOp) upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
+	fileSizeStr := cast.ToString(input.FileSize)
+	stageCreated, err := s.stagedUploadsCreate(fileSizeStr, input.Filename, input.Mimetype)
 	if err != nil {
 		return nil, fmt.Errorf("s.stagedUploadsCreate: %w", err)
 	}
 
-	err = s.uploadFileToStage(ctx, fileContent, fileName, stageCreated)
+	err = s.uploadFileToStage(ctx, input.File, input.Filename, fileSizeStr, stageCreated)
 	if err != nil {
 		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
 
-	result, err := s.fileCreate(ctx, stageCreated)
+	result, err := s.fileCreate(ctx, *stageCreated.ResourceURL)
 	if err != nil {
 		return nil, fmt.Errorf("s.fileCreate: %w", err)
 	}
 
-	fileInfo, err := s.QueryGenericFile(ctx, result.Files[0].GetID())
-	if err != nil {
-		return nil, fmt.Errorf("s.QueryGenericFile: %w", err)
-	}
-
-	return fileInfo, nil
+	return result, nil
 }
 
 func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string) (*model.StagedMediaUploadTarget, error) {
 	m := mutationStagedUploadsCreate{}
 	method := model.StagedUploadHTTPMethodTypePost
 
+	resource := fileTargetResource(mimetype)
 	err := s.client.gql.Mutate(context.Background(), &m, map[string]interface{}{
 		"input": []model.StagedUploadInput{
 			{
@@ -107,7 +167,7 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 				Filename:   fileName,
 				HTTPMethod: &method,
 				MimeType:   mimetype,
-				Resource:   model.StagedUploadTargetGenerateUploadResourceFile,
+				Resource:   resource,
 			},
 		},
 	})
@@ -123,7 +183,7 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 }
 
 func (s *FileServiceOp) uploadFileToStage(
-	ctx context.Context, file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget,
+	ctx context.Context, file io.Reader, fileName, fileSize string, stageCreated *model.StagedMediaUploadTarget,
 ) error {
 
 	multiForm, err := createMultipartFormWithFile(file, fileName, stageCreated)
@@ -135,7 +195,7 @@ func (s *FileServiceOp) uploadFileToStage(
 	postTempTargetURL := stageCreated.URL
 	postTempTargetHeaders := map[string]string{
 		"Content-Type":   multiForm.contentType,
-		"Content-Length": cast.ToString(len(file)),
+		"Content-Length": fileSize,
 	}
 
 	err = performHTTPPostWithHeaders(ctx, *postTempTargetURL, multiForm.data, postTempTargetHeaders)
@@ -146,13 +206,13 @@ func (s *FileServiceOp) uploadFileToStage(
 	return nil
 }
 
-func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.StagedMediaUploadTarget) (*model.FileCreatePayload, error) {
+func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*model.FileCreatePayload, error) {
 	out := mutationFileCreate{}
 
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
-				OriginalSource: *stageCreated.ResourceURL,
+				OriginalSource: resourceURL,
 			},
 		},
 	}
@@ -186,7 +246,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, stageCreated *model.Stag
 	return &out.FileCreateResult, nil
 }
 
-func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
+func (s *FileServiceOp) queryFile(ctx context.Context, fileID string) (model.File, error) {
 	out := struct {
 		Files *model.FileConnection `json:"files"`
 	}{}
@@ -208,7 +268,7 @@ func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*m
 		return nil, fmt.Errorf("%+v", out.Files.Edges[0].Node.GetFileErrors())
 	}
 
-	return out.Files.Edges[0].Node.(*model.GenericFile), nil
+	return out.Files.Edges[0].Node, nil
 }
 
 func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]string, error) {
@@ -230,9 +290,7 @@ func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]stri
 }
 
 func createMultipartFormWithFile(
-	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipartFormWithFile, error) {
-	// Create a buffer to store the file contents
-	fileBuffer := bytes.NewBuffer(file)
+	file io.Reader, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipartFormWithFile, error) {
 
 	// Create a multipart form and add parameters
 	form := &bytes.Buffer{}
@@ -247,7 +305,7 @@ func createMultipartFormWithFile(
 	if err != nil {
 		return nil, fmt.Errorf("writer.CreateFormFile: %w", err)
 	}
-	_, err = io.Copy(fileWriter, fileBuffer)
+	_, err = io.Copy(fileWriter, file)
 	if err != nil {
 		return nil, fmt.Errorf("io.Copy: %w", err)
 	}
@@ -283,5 +341,16 @@ func performHTTPPostWithHeaders(ctx context.Context, url string, body io.Reader,
 }
 
 func getShopifyID(shopifyBaseID string) string {
-	return strings.Replace(shopifyBaseID, "gid://shopify/GenericFile/", "", 1)
+	regexPattern := `^(gid://shopify/MediaImage/|gid://shopify/GenericFile/)`
+	re := regexp.MustCompile(regexPattern)
+
+	return re.ReplaceAllString(shopifyBaseID, "")
+}
+
+func fileTargetResource(mimetype string) model.StagedUploadTargetGenerateUploadResource {
+	if strings.Contains(mimetype, "image") {
+		return model.StagedUploadTargetGenerateUploadResourceImage
+	}
+
+	return model.StagedUploadTargetGenerateUploadResourceFile
 }
