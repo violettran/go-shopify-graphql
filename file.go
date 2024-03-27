@@ -18,7 +18,7 @@ import (
 )
 
 type FileService interface {
-	Upload(ctx context.Context, input *UploadInput) (*model.File, error)
+	Upload(ctx context.Context, input *UploadInput) (model.File, error)
 	QueryFile(ctx context.Context, fileID string) (model.File, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
 	QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error)
@@ -123,7 +123,7 @@ func (s *FileServiceOp) QueryMediaImage(ctx context.Context, fileID string) (*mo
 	return file.(*model.MediaImage), nil
 }
 
-func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.File, error) {
+func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (model.File, error) {
 	var (
 		fileCreatePayload *model.FileCreatePayload
 		err               error
@@ -263,7 +263,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*mo
 }
 
 // getUploadResult continues querying until a result found or an error occurs.
-func (s *FileServiceOp) getUploadResult(ctx context.Context, fileID string, interval time.Duration) (*model.File, error) {
+func (s *FileServiceOp) getUploadResult(ctx context.Context, fileID string, interval time.Duration) (model.File, error) {
 	for {
 		file, err := s.QueryFile(ctx, fileID)
 		if IsRateLimitError(err) {
@@ -276,7 +276,7 @@ func (s *FileServiceOp) getUploadResult(ctx context.Context, fileID string, inte
 
 		switch file.GetFileStatus() {
 		case model.FileStatusReady:
-			return &file, nil
+			return file, nil
 		case model.FileStatusFailed:
 			errData := map[string]any{
 				"fileID":     fileID,
