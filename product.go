@@ -146,6 +146,9 @@ var productQuery = fmt.Sprintf(`
 				title
 				inventoryPolicy
 				position
+				inventoryItem {
+                    tracked
+                }
 			}
 		}
 		pageInfo{
@@ -266,6 +269,9 @@ var productBulkQuery = fmt.Sprintf(`
 				title
 				inventoryPolicy
 				position
+				inventoryItem {
+                    tracked
+                }
 			}
 		}
 	}
