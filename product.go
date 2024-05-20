@@ -169,6 +169,12 @@ var productBulkQuery = fmt.Sprintf(`
 				key
 				value
 				type
+				ownerType
+				owner {
+					... on Product {
+						id
+					}
+				}
 			}
 		}
 	}
