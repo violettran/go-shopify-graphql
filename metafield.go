@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
@@ -14,12 +13,10 @@ import (
 type MetafieldService interface {
 	ListAllShopMetafields(ctx context.Context) ([]*Metafield, error)
 	ListShopMetafieldsByNamespace(ctx context.Context, namespace string) ([]*Metafield, error)
-
-	GetShopMetafieldByKey(ctx context.Context, namespace, key string) (Metafield, error)
-
-	Delete(ctx context.Context, metafield MetafieldDeleteInput) error
-	DeleteBulk(ctx context.Context, metafield []MetafieldDeleteInput) error
-	CreateBulk(ctx context.Context, inputs []*model.MetafieldsSetInput) ([]*model.Metafield, error)
+	GetShopMetafieldByKey(ctx context.Context, namespace, key string) (*Metafield, error)
+	Delete(ctx context.Context, input model.MetafieldDeleteInput) error
+	DeleteBulk(ctx context.Context, metafields []model.MetafieldIdentifierInput) error
+	CreateBulk(ctx context.Context, metafields []model.MetafieldsSetInput) ([]*model.Metafield, error)
 }
 
 type MetafieldServiceOp struct {
@@ -49,18 +46,12 @@ type Metafield struct {
 	Type model.MetafieldValueType `json:"type,omitempty"`
 }
 
-type MetafieldDeleteInput struct {
-	// The ID of the metafield to delete.
-	ID graphql.ID `json:"id,omitempty"`
-}
-
 type mutationMetafieldDelete struct {
-	MetafieldDeleteResult metafieldDeleteResult `graphql:"metafieldDelete(input: $input)" json:"metafieldDelete"`
+	MetafieldDeletePayload model.MetafieldDeletePayload `graphql:"metafieldDelete(input: $input)" json:"metafieldDeletePayload"`
 }
 
-type metafieldDeleteResult struct {
-	DeletedID  string       `json:"deletedId,omitempty"`
-	UserErrors []UserErrors `json:"userErrors"`
+type mutationMetafieldDeleteBulk struct {
+	MetafieldsDeletePayload model.MetafieldsDeletePayload `graphql:"metafieldsDelete(metafields: $metafields)" json:"metafieldsDeletePayload"`
 }
 
 type mutationMetafieldCreateBulk struct {
@@ -110,10 +101,10 @@ func (s *MetafieldServiceOp) ListAllShopMetafields(ctx context.Context) ([]*Meta
 		}
 `
 
-	res := []*Metafield{}
+	res := make([]*Metafield, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
-		return []*Metafield{}, err
+		return nil, err
 	}
 
 	return res, nil
@@ -144,58 +135,64 @@ func (s *MetafieldServiceOp) ListShopMetafieldsByNamespace(ctx context.Context, 
 `
 	q = strings.ReplaceAll(q, "$namespace", namespace)
 
-	res := []*Metafield{}
+	res := make([]*Metafield, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
-		return []*Metafield{}, err
+		return nil, err
 	}
 
 	return res, nil
 }
 
-func (s *MetafieldServiceOp) GetShopMetafieldByKey(ctx context.Context, namespace, key string) (Metafield, error) {
+func (s *MetafieldServiceOp) GetShopMetafieldByKey(ctx context.Context, namespace, key string) (*Metafield, error) {
 	var q struct {
 		Shop struct {
 			Metafield Metafield `graphql:"metafield(namespace: $namespace, key: $key)"`
 		} `graphql:"shop"`
 	}
-	vars := map[string]interface{}{
+	vars := map[string]any{
 		"namespace": graphql.String(namespace),
 		"key":       graphql.String(key),
 	}
 
 	err := s.client.gql.Query(ctx, &q, vars)
 	if err != nil {
-		return Metafield{}, err
+		return nil, err
 	}
 
-	return q.Shop.Metafield, nil
+	return &q.Shop.Metafield, nil
 }
 
-func (s *MetafieldServiceOp) DeleteBulk(ctx context.Context, metafields []MetafieldDeleteInput) error {
-	for _, m := range metafields {
-		err := s.Delete(ctx, m)
-		if err != nil {
-			log.Warnf("Couldn't delete metafield (%v): %s", m, err)
-		}
+func (s *MetafieldServiceOp) DeleteBulk(ctx context.Context, metafields []model.MetafieldIdentifierInput) error {
+	out := mutationMetafieldDeleteBulk{}
+	vars := map[string]any{
+		"metafields": metafields,
+	}
+
+	if err := s.client.gql.MutateString(ctx, metafieldsSet, vars, &out); err != nil {
+		return fmt.Errorf("gql.MutateString: %w", err)
+	}
+
+	if len(out.MetafieldsDeletePayload.UserErrors) >= 1 {
+		return fmt.Errorf("%+v", out.MetafieldsDeletePayload.UserErrors)
 	}
 
 	return nil
 }
 
-func (s *MetafieldServiceOp) Delete(ctx context.Context, metafield MetafieldDeleteInput) error {
+func (s *MetafieldServiceOp) Delete(ctx context.Context, input model.MetafieldDeleteInput) error {
 	m := mutationMetafieldDelete{}
 
-	vars := map[string]interface{}{
-		"input": metafield,
+	vars := map[string]any{
+		"input": input,
 	}
 	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
 
-	if len(m.MetafieldDeleteResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.MetafieldDeleteResult.UserErrors)
+	if len(m.MetafieldDeletePayload.UserErrors) >= 1 {
+		return fmt.Errorf("%+v", m.MetafieldDeletePayload.UserErrors)
 	}
 
 	return nil
@@ -203,7 +200,7 @@ func (s *MetafieldServiceOp) Delete(ctx context.Context, metafield MetafieldDele
 
 func (s *DiscountServiceOp) CreateBulk(ctx context.Context, inputs []model.MetafieldsSetInput) ([]model.Metafield, error) {
 	out := mutationMetafieldCreateBulk{}
-	vars := map[string]interface{}{
+	vars := map[string]any{
 		"metafields": inputs,
 	}
 
