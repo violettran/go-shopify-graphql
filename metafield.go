@@ -16,7 +16,7 @@ type MetafieldService interface {
 	GetShopMetafieldByKey(ctx context.Context, namespace, key string) (*Metafield, error)
 	Delete(ctx context.Context, input model.MetafieldDeleteInput) error
 	DeleteBulk(ctx context.Context, metafields []model.MetafieldIdentifierInput) error
-	CreateBulk(ctx context.Context, metafields []model.MetafieldsSetInput) ([]*model.Metafield, error)
+	CreateBulk(ctx context.Context, metafields []model.MetafieldsSetInput) ([]model.Metafield, error)
 }
 
 type MetafieldServiceOp struct {
@@ -198,7 +198,7 @@ func (s *MetafieldServiceOp) Delete(ctx context.Context, input model.MetafieldDe
 	return nil
 }
 
-func (s *DiscountServiceOp) CreateBulk(ctx context.Context, inputs []model.MetafieldsSetInput) ([]model.Metafield, error) {
+func (s *MetafieldServiceOp) CreateBulk(ctx context.Context, inputs []model.MetafieldsSetInput) ([]model.Metafield, error) {
 	out := mutationMetafieldCreateBulk{}
 	vars := map[string]any{
 		"metafields": inputs,
