@@ -7,14 +7,16 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/spf13/cast"
+
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type FileService interface {
@@ -131,7 +133,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (model.F
 
 	if input.OriginalSource != nil {
 		// If original source is found, upload via url
-		fileCreatePayload, err = s.fileCreate(ctx, *input.OriginalSource)
+		fileCreatePayload, err = s.fileCreate(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("s.fileCreate: %w", err)
 		}
@@ -163,7 +165,8 @@ func (s *FileServiceOp) upload(ctx context.Context, input *UploadInput) (*model.
 		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
 
-	result, err := s.fileCreate(ctx, *stageCreated.ResourceURL)
+	input.OriginalSource = stageCreated.ResourceURL
+	result, err := s.fileCreate(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("s.fileCreate: %w", err)
 	}
@@ -222,13 +225,20 @@ func (s *FileServiceOp) uploadFileToStage(
 	return nil
 }
 
-func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*model.FileCreatePayload, error) {
+func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
 	out := mutationFileCreate{}
 
+	replaceMode := model.FileCreateInputDuplicateResolutionModeReplace
+	fileType := fileCreateContentType(input.Mimetype)
+
+	newFilename := replaceExtension(input.Filename, filepath.Ext(*input.OriginalSource))
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
-				OriginalSource: resourceURL,
+				Filename:                &newFilename,
+				ContentType:             &fileType,
+				OriginalSource:          *input.OriginalSource,
+				DuplicateResolutionMode: &replaceMode,
 			},
 		},
 	}
@@ -405,4 +415,17 @@ func fileTargetResource(mimetype string) model.StagedUploadTargetGenerateUploadR
 	}
 
 	return model.StagedUploadTargetGenerateUploadResourceFile
+}
+
+func fileCreateContentType(mimetype string) model.FileContentType {
+	if strings.Contains(mimetype, "image") {
+		return model.FileContentTypeImage
+	}
+
+	return model.FileContentTypeFile
+}
+
+// replaceExtension replaces the extension of a filename with a new extension.
+func replaceExtension(filename, newExt string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename)) + newExt
 }
