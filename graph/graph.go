@@ -15,7 +15,7 @@ const (
 var (
 	apiProtocol          = "https"
 	defaultAPIPathPrefix = "admin/api"
-	defaultAPIVersion    = "2024-01"
+	defaultAPIVersion    = "default"
 	apiEndpoint          = "graphql.json"
 )
 
@@ -25,7 +25,7 @@ type Option func(t *transport)
 // WithVersion optionally sets the API version if the passed string is valid
 func WithVersion(graphqlApiVersion string) Option {
 	return func(t *transport) {
-		if graphqlApiVersion != "" && graphqlApiVersion != "latest" {
+		if graphqlApiVersion != "" && graphqlApiVersion != defaultAPIVersion {
 			t.apiVersion = graphqlApiVersion
 		}
 	}
@@ -33,7 +33,7 @@ func WithVersion(graphqlApiVersion string) Option {
 
 func WithStoreFrontVersion(apiVersion string) Option {
 	return func(t *transport) {
-		if apiVersion != "" && apiVersion != "latest" {
+		if apiVersion != "" && apiVersion != defaultAPIVersion {
 			t.apiVersion = apiVersion
 		}
 	}
@@ -100,5 +100,8 @@ func NewClient(shopifyDomain string, opts ...Option) *graphql.Client {
 }
 
 func buildAPIEndpoint(domain string, path string, version string) string {
+	if version == defaultAPIVersion {
+		return fmt.Sprintf("%s://%s/%s/%s", apiProtocol, domain, path, apiEndpoint)
+	}
 	return fmt.Sprintf("%s://%s/%s/%s/%s", apiProtocol, domain, path, version, apiEndpoint)
 }
