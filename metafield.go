@@ -51,11 +51,11 @@ type mutationMetafieldDelete struct {
 }
 
 type mutationMetafieldDeleteBulk struct {
-	MetafieldsDeletePayload model.MetafieldsDeletePayload `graphql:"metafieldsDelete(metafields: $metafields)" json:"metafieldsDeletePayload"`
+	MetafieldsDeletePayload model.MetafieldsDeletePayload `graphql:"metafieldsDelete(metafields: $metafields)" json:"metafieldsDelete"`
 }
 
 type mutationMetafieldCreateBulk struct {
-	MetafieldCreateBulkPayload model.MetafieldsSetPayload `json:"metafieldCreateBulkPayload"`
+	MetafieldCreateBulkPayload model.MetafieldsSetPayload `json:"metafieldsSet"`
 }
 
 var metafieldsSet = `

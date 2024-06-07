@@ -19,11 +19,11 @@ type DiscountServiceOp struct {
 var _ DiscountService = &DiscountServiceOp{}
 
 type mutationDiscountAutomaticAppCreate struct {
-	DiscountAutomaticCreateAppPayload model.DiscountAutomaticAppCreatePayload `json:"discountAutomaticCreateAppPayload"`
+	DiscountAutomaticCreateAppPayload model.DiscountAutomaticAppCreatePayload `json:"discountAutomaticAppCreate"`
 }
 
 type mutationDiscountAutomaticAppUpdate struct {
-	DiscountAutomaticAppUpdatePayload model.DiscountAutomaticAppUpdatePayload `json:"discountAutomaticAppUpdatePayload"`
+	DiscountAutomaticAppUpdatePayload model.DiscountAutomaticAppUpdatePayload `json:"discountAutomaticAppUpdate"`
 }
 
 var discountAutomaticAppCreate = `
