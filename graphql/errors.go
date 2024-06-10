@@ -18,4 +18,5 @@ var (
 	ErrInternal           = errors.New("internal error")
 	ErrServiceUnavailable = errors.New("service unavailable")
 	ErrGatewayTimeout     = errors.New("gateway timeout")
+	ErrNotExisted         = errors.New("doesn't exist")
 )
