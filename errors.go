@@ -37,6 +37,10 @@ func IsRateLimitError(err error) bool {
 }
 
 func IsNotExistError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), graphql.ErrNotExisted.Error())
+}
+
+func IsFileNotExistError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "FILE_DOES_NOT_EXIST")
 }
 
