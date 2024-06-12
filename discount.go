@@ -9,7 +9,7 @@ import (
 
 type DiscountService interface {
 	AutomaticAppCreate(ctx context.Context, discount model.DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error)
-	AutomaticAppUpdate(ctx context.Context, discountBaseID string, discount model.DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error)
+	AutomaticAppUpdate(ctx context.Context, discountBaseID string, discount DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error)
 }
 
 type DiscountServiceOp struct {
@@ -24,6 +24,31 @@ type mutationDiscountAutomaticAppCreate struct {
 
 type mutationDiscountAutomaticAppUpdate struct {
 	DiscountAutomaticAppUpdatePayload model.DiscountAutomaticAppUpdatePayload `json:"discountAutomaticAppUpdate"`
+}
+
+type DiscountAutomaticAppInput struct {
+	model.DiscountAutomaticAppInput
+	ClearEndsAt bool `json:"-"`
+}
+
+func (i *DiscountAutomaticAppInput) ToMap() map[string]any {
+	result := make(map[string]any)
+	if i.ClearEndsAt {
+		result["endsAt"] = nil
+	}
+	if i.EndsAt != nil {
+		result["endsAt"] = i.EndsAt
+	}
+	if i.Title != nil {
+		result["title"] = i.Title
+	}
+	if i.CombinesWith != nil {
+		result["combinesWith"] = i.CombinesWith
+	}
+	if i.Metafields != nil {
+		result["metafields"] = i.Metafields
+	}
+	return result
 }
 
 var discountAutomaticAppCreate = `
@@ -97,11 +122,11 @@ func (s *DiscountServiceOp) AutomaticAppCreate(ctx context.Context, input model.
 	return out.DiscountAutomaticCreateAppPayload.AutomaticAppDiscount, nil
 }
 
-func (s *DiscountServiceOp) AutomaticAppUpdate(ctx context.Context, discountBaseID string, input model.DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error) {
+func (s *DiscountServiceOp) AutomaticAppUpdate(ctx context.Context, discountBaseID string, input DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error) {
 	out := mutationDiscountAutomaticAppUpdate{}
 	vars := map[string]any{
 		"id":                   discountBaseID,
-		"automaticAppDiscount": input,
+		"automaticAppDiscount": input.ToMap(),
 	}
 	if err := s.client.gql.MutateString(ctx, discountAutomaticAppUpdate, vars, &out); err != nil {
 		return nil, fmt.Errorf("gql.MutateString: %w", err)
