@@ -66,6 +66,10 @@ func IsValidationDiscountError(err error) bool {
 	if errors.As(err, &discountErr) {
 		return discountErr.Code == model.DiscountErrorCodeInvalid || discountErr.Code == model.DiscountErrorCodeMaxAppDiscounts
 	}
+	// Shopify returns a nil error code for some APIs, so validation must be done by checking the error message.
+	if strings.Contains(strings.ToLower(err.Error()), "the discount doesn't exist") {
+		return true
+	}
 	return false
 }
 
