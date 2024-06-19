@@ -62,11 +62,15 @@ var metafieldsSet = `
 mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
   metafieldsSet(metafields: $metafields) {
     metafields {
+      id
       key
       namespace
       value
       createdAt
       updatedAt
+      ownerType
+      type
+      description
     }
     userErrors {
       field
