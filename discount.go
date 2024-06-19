@@ -144,10 +144,12 @@ mutation discountAutomaticActivate($id: ID!) {
     automaticDiscountNode {
       automaticDiscount {
         ... on DiscountAutomaticApp {
+          discountId
           title
           status
           startsAt
           endsAt
+          __typename
         }
       }
     }
@@ -171,7 +173,8 @@ mutation discountAutomaticDeactivate($id: ID!) {
           title
           status
           startsAt
-          endsAt 
+          endsAt
+          __typename
         }
       }
     }
