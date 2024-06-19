@@ -169,6 +169,7 @@ var productBulkQuery = fmt.Sprintf(`
 				key
 				value
 				type
+				ownerType
 			}
 		}
 	}
