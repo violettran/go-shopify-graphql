@@ -13,6 +13,7 @@ type DiscountService interface {
 	AutomaticDelete(ctx context.Context, discountBaseID string) error
 	AutomaticActivate(ctx context.Context, discountBaseID string) (*model.DiscountAutomaticNode, error)
 	AutomaticDeactivate(ctx context.Context, discountBaseID string) (*model.DiscountAutomaticNode, error)
+	AutomaticNode(ctx context.Context, discountBaseID, metafieldKey, metafieldNamespace string) (*model.DiscountAutomaticNode, error)
 }
 
 type DiscountServiceOp struct {
@@ -188,6 +189,37 @@ mutation discountAutomaticDeactivate($id: ID!) {
 }
 `
 
+var automaticDiscountNode = `
+query ($id: ID!, $key: String!, $namespace: String) {
+  automaticDiscountNode (id: $id) {
+    id
+    metafield(key: $key, namespace: $namespace) {
+      id
+      key
+      namespace
+      value
+      type
+    }
+    automaticDiscount {
+      __typename
+      ... on DiscountAutomaticApp {
+        discountId
+        title
+        startsAt
+        endsAt
+        status
+        discountClass
+        combinesWith {
+          orderDiscounts
+          productDiscounts
+          shippingDiscounts
+        }
+      }
+    }
+  }
+}
+`
+
 func (s *DiscountServiceOp) AutomaticAppCreate(ctx context.Context, input model.DiscountAutomaticAppInput) (*model.DiscountAutomaticApp, error) {
 	out := mutationDiscountAutomaticAppCreate{}
 	vars := map[string]any{
@@ -270,6 +302,21 @@ func (s *DiscountServiceOp) AutomaticDeactivate(ctx context.Context, discountBas
 	}
 
 	return out.DiscountAutomaticDeactivatePayload.AutomaticDiscountNode, nil
+}
+
+func (s *DiscountServiceOp) AutomaticNode(ctx context.Context, discountBaseID, metafieldKey, metafieldNamespace string) (*model.DiscountAutomaticNode, error) {
+	out := model.QueryRoot{}
+	vars := map[string]any{
+		"id":        discountBaseID,
+		"key":       metafieldKey,
+		"namespace": metafieldNamespace,
+	}
+
+	if err := s.client.gql.QueryString(ctx, automaticDiscountNode, vars, &out); err != nil {
+		return nil, fmt.Errorf("gql.QueryString: %w", err)
+	}
+
+	return out.AutomaticDiscountNode, nil
 }
 
 func parseUserErrors(errors []model.DiscountUserError) error {
