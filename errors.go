@@ -57,7 +57,7 @@ func IsRateLimitError(err error) bool {
 }
 
 func IsNotExistError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), graphql.ErrNotExisted.Error())
+	return err != nil && (strings.Contains(err.Error(), "doesn't exist") || strings.Contains(err.Error(), "does not exist"))
 }
 
 // IsValidationDiscountError checks if the error indicates that the active period in discount overlaps with another price rule.
