@@ -5,6 +5,7 @@ go 1.22
 toolchain go1.22.3
 
 require (
+	github.com/aws/aws-sdk-go v1.51.22
 	github.com/gempages/go-helper v1.9.2-0.20240509104446-bc2a62b3d67c
 	github.com/gempages/go-shopify-graphql-model v0.0.0-20240621063109-f790fa8d75ea
 	github.com/getsentry/sentry-go v0.27.0
