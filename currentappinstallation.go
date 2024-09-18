@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
@@ -16,20 +17,34 @@ type AppServiceOp struct {
 
 var _ AppService = &AppServiceOp{}
 
-const queryCurrentAppInstallation = `
-	query {
-		currentAppInstallation {
-			id
-			app {
-				id
-				title
-				embedded
-				isPostPurchaseAppInUse
-				developerType
-			}
-		}
+var queryCurrentAppInstallation = fmt.Sprintf(`
+query {
+  currentAppInstallation {
+	id
+	app {
+	  id
+	  title
+	  embedded
+	  isPostPurchaseAppInUse
+	  developerType
 	}
-`
+	activeSubscriptions {
+	  createdAt
+	  currentPeriodEnd
+	  id
+	  name
+	  returnUrl
+	  status
+	  test
+	  trialDays
+	  lineItems {
+		id
+		%s
+	  }
+	}
+  }
+}
+`, appSubscriptionLineItemPlan)
 
 func (a *AppServiceOp) GetCurrentAppInstallation(ctx context.Context) (*model.AppInstallation, error) {
 	out := struct {

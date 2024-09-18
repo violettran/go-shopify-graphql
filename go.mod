@@ -1,13 +1,11 @@
 module github.com/gempages/go-shopify-graphql
 
-go 1.22
-
-toolchain go1.22.5
+go 1.22.5
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/gempages/go-helper v1.12.2
-	github.com/gempages/go-shopify-graphql-model v0.0.0-20240827083056-412837a16e2d
+	github.com/gempages/go-shopify-graphql-model v0.0.0-20240917105048-2a1c12b10aee
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
@@ -16,7 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.7.0
 	github.com/vektah/gqlparser/v2 v2.5.16
-	golang.org/x/net v0.28.0
+	golang.org/x/net v0.29.0
 	gopkg.in/guregu/null.v4 v4.0.0
 )
 
@@ -36,7 +34,7 @@ require (
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
-	golang.org/x/tools v0.24.0 // indirect
+	golang.org/x/tools v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.66.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
