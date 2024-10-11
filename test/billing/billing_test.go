@@ -14,7 +14,7 @@ import (
 	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 )
 
-var _ = Describe("BillingService", Serial, func() {
+var _ = Describe("BillingService", func() {
 	var (
 		ctx           context.Context
 		shopifyClient *shopify.Client
@@ -32,7 +32,7 @@ var _ = Describe("BillingService", Serial, func() {
 		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
 	})
 
-	Describe("AppSubscriptionCreate", func() {
+	Describe("AppSubscriptionCreate", Serial, func() {
 		When("subscription includes app recurring pricing with `ANNUAL` interval + app usage pricing", func() {
 			It("returns error", func() {
 				name := "Subscription Name"
@@ -236,6 +236,17 @@ var _ = Describe("BillingService", Serial, func() {
 				Expect(result.AppSubscription.ReturnURL).To(Equal(returnUrl))
 				Expect(result.AppSubscription.LineItems).To(HaveLen(len(lineItems)))
 				Expect(result.AppSubscription.TrialDays).To(Equal(trialDays))
+			})
+		})
+	})
+
+	Describe("FindActiveAppSubscriptions", func() {
+		When("shop has active subscriptions", func() {
+			It("return no error", func() {
+				result, err := shopifyClient.App.FindActiveAppSubscriptions(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+				Expect(len(result)).NotTo(BeZero())
 			})
 		})
 	})
