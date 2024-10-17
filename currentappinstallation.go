@@ -22,7 +22,9 @@ var queryCurrentAppInstallation = fmt.Sprintf(`
 query {
   currentAppInstallation {
 	id
-	accessScopes
+	accessScopes {
+	  handle
+	}
 	app {
 	  id
 	  title
