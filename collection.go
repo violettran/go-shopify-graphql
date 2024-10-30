@@ -11,9 +11,18 @@ import (
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
+type ListCollectionArgs struct {
+	Fields  string
+	Query   string
+	First   int
+	After   string
+	Reverse bool
+	SortKey string
+}
+
 type CollectionService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Collection, error)
-	ListWithFields(ctx context.Context, first int, cursor string, query string, fields string) (*model.CollectionConnection, error)
+	ListWithFields(ctx context.Context, args *ListCollectionArgs) (*model.CollectionConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Collection, error)
 	GetSingleCollection(ctx context.Context, id string, cursor string) (*model.Collection, error)
@@ -151,14 +160,22 @@ func (s *CollectionServiceOp) List(ctx context.Context, opts ...QueryOption) ([]
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cursor, query, fields string) (*model.CollectionConnection, error) {
-	if fields == "" {
-		fields = `id`
+func (s *CollectionServiceOp) ListWithFields(ctx context.Context, args *ListCollectionArgs) (*model.CollectionConnection, error) {
+	if args == nil {
+		args = &ListCollectionArgs{}
+	}
+
+	if args.Fields == "" {
+		args.Fields = `id`
+	}
+
+	if args.SortKey == "" {
+		args.SortKey = `ID`
 	}
 
 	q := fmt.Sprintf(`
-		query collections($first: Int!, $cursor: String, $query: String) {
-			collections(first: $first, after: $cursor, query:$query){
+		query collections($first: Int!, $after: String, $query: String, $sortKey: CollectionSortKeys, $reverse: Boolean!) {
+			collections(first: $first, after: $after, query:$query, sortKey: $sortKey, reverse: $reverse) {
 				edges{
 					cursor
 					node {
@@ -170,17 +187,21 @@ func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cur
                 }
 			}
 		}
-	`, fields)
+	`, args.Fields)
 
 	vars := map[string]interface{}{
-		"first": first,
+		"first": args.First,
 	}
-	if cursor != "" {
-		vars["cursor"] = cursor
+	if args.After != "" {
+		vars["after"] = args.After
 	}
-	if query != "" {
-		vars["query"] = query
+	if args.Query != "" {
+		vars["query"] = args.Query
 	}
+	if args.SortKey != "" {
+		vars["sortKey"] = args.SortKey
+	}
+	vars["reverse"] = args.Reverse
 
 	out := model.QueryRoot{}
 	err := s.client.gql.QueryString(ctx, q, vars, &out)
