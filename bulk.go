@@ -283,7 +283,7 @@ type bulkQueryBuilder struct {
 	query         *string
 	first         int
 	after         string
-	sortKey       *string
+	sortKey       string
 	reverse       *bool
 }
 
@@ -304,7 +304,7 @@ func (b *bulkQueryBuilder) SetAfter(after string) {
 }
 
 func (b *bulkQueryBuilder) SetSortKey(sortKey string) {
-	b.sortKey = &sortKey
+	b.sortKey = sortKey
 }
 
 func (b *bulkQueryBuilder) SetReverse(reverse bool) {
@@ -320,8 +320,8 @@ func (b *bulkQueryBuilder) Build() string {
 	if b.query != nil {
 		vars = append(vars, fmt.Sprintf(`query: "%s"`, *b.query))
 	}
-	if b.sortKey != nil {
-		vars = append(vars, fmt.Sprintf(`sortKey: %s`, *b.sortKey))
+	if b.sortKey != "" {
+		vars = append(vars, fmt.Sprintf(`sortKey: %s`, b.sortKey))
 	}
 	if b.reverse != nil {
 		vars = append(vars, fmt.Sprintf(`reverse: %v`, *b.reverse))
