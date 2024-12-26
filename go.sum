@@ -11,8 +11,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/gempages/go-helper v1.12.2 h1:cZ+yKsjoxyfQul1BXXFsGXDO7e/VucK6rT4ABrNtB1M=
 github.com/gempages/go-helper v1.12.2/go.mod h1:wt7oLh44grsXxxkf6Q0fORheW0iH2SGwzb70dT7tAsE=
-github.com/gempages/go-shopify-graphql-model v1.0.0 h1:alhJgLUUAEyjiolaBFwaUGjCOVG1U6HyGRWhc7ax+vM=
-github.com/gempages/go-shopify-graphql-model v1.0.0/go.mod h1:fyootk3nlh8wmi6ppns8IFXgSUgCwdBVt5WWNk+luvM=
+github.com/gempages/go-shopify-graphql-model v1.0.1-0.20241225103921-6ddff90c3663 h1:KyC4zCRCVEbYmxaEHrzDxTOaRB3uVQc+RMBkV1C13j4=
+github.com/gempages/go-shopify-graphql-model v1.0.1-0.20241225103921-6ddff90c3663/go.mod h1:RTa7vx/KkaxDPOOiwKrXhyFmovPuFQGbej9lU9lKoSc=
 github.com/getsentry/sentry-go v0.28.1 h1:zzaSm/vHmGllRM6Tpx1492r0YDzauArdBfkJRtY6P5k=
 github.com/getsentry/sentry-go v0.28.1/go.mod h1:1fQZ+7l7eeJ3wYi82q5Hg8GqAPgefRq+FP/QhafYVgg=
 github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=

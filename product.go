@@ -19,16 +19,11 @@ type ListProductArgs struct {
 
 type ProductService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
-	ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error)
 	ListWithFields(ctx context.Context, args *ListProductArgs) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
 	GetWithFields(ctx context.Context, id string, fields string) (*model.Product, error)
 	GetSingleProductCollection(ctx context.Context, id string, cursor string) (*model.Product, error)
-
-	Create(ctx context.Context, product model.ProductInput, media []model.CreateMediaInput) (output *model.Product, err error)
-	Update(ctx context.Context, product model.ProductInput) (output *model.Product, err error)
-	Delete(ctx context.Context, product model.ProductDeleteInput) (deletedID *string, err error)
 }
 
 type ProductServiceOp struct {
@@ -36,18 +31,6 @@ type ProductServiceOp struct {
 }
 
 var _ ProductService = &ProductServiceOp{}
-
-type mutationProductCreate struct {
-	ProductCreateResult model.ProductCreatePayload `graphql:"productCreate(input: $input, media: $media)" json:"productCreate"`
-}
-
-type mutationProductUpdate struct {
-	ProductUpdateResult model.ProductUpdatePayload `graphql:"productUpdate(input: $input)" json:"productUpdate"`
-}
-
-type mutationProductDelete struct {
-	ProductDeleteResult model.ProductDeletePayload `graphql:"productDelete(input: $input)" json:"productDelete"`
-}
 
 const productBaseQuery = `
   id
@@ -91,9 +74,6 @@ const productBaseQuery = `
 		title
 	}
 	templateSuffix
-    variantsCount {
-		count
-	}
 `
 
 var singleProductQueryCollection = fmt.Sprintf(`
@@ -263,51 +243,6 @@ var productBulkQuery = fmt.Sprintf(`
 	}
 `, productBaseQuery)
 
-var productVariantQuery = `
-	id
-    product {
-		id
-	}
-	createdAt
-	updatedAt
-	legacyResourceId
-	sku
-	selectedOptions{
-		name
-		value
-	}
-	image {
-		altText
-		height
-		id
-		src
-		width
-	}
-	compareAtPrice
-	price
-	inventoryQuantity
-	barcode
-	title
-	inventoryPolicy
-	position
-	inventoryItem {
-		tracked
-	}
-	metafields{
-		edges{
-			node{
-				id
-				legacyResourceId
-				namespace
-				key
-				value
-				type
-				ownerType
-			}
-		}
-	}
-`
-
 func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error) {
 	b := &bulkQueryBuilder{
 		operationName: "products",
@@ -319,25 +254,6 @@ func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*mo
 	q := b.Build()
 
 	res := make([]*model.Product, 0)
-	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
-	if err != nil {
-		return nil, fmt.Errorf("bulk query: %w", err)
-	}
-
-	return res, nil
-}
-
-func (s *ProductServiceOp) ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error) {
-	b := &bulkQueryBuilder{
-		operationName: "productVariants",
-		fields:        productVariantQuery,
-	}
-	for _, opt := range opts {
-		opt(b)
-	}
-	q := b.Build()
-
-	res := make([]*model.ProductVariant, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return nil, fmt.Errorf("bulk query: %w", err)
@@ -515,62 +431,4 @@ func (s *ProductServiceOp) GetSingleProductCollection(ctx context.Context, id st
 	}
 
 	return out.Product, nil
-}
-
-func (s *ProductServiceOp) Create(ctx context.Context, product model.ProductInput, media []model.CreateMediaInput) (output *model.Product, err error) {
-	m := mutationProductCreate{}
-
-	vars := map[string]interface{}{
-		"input": product,
-		"media": media,
-	}
-	err = s.client.gql.Mutate(ctx, &m, vars)
-	if err != nil {
-		return
-	}
-
-	if len(m.ProductCreateResult.UserErrors) > 0 {
-		err = fmt.Errorf("%+v", m.ProductCreateResult.UserErrors)
-		return
-	}
-
-	return m.ProductCreateResult.Product, nil
-}
-
-func (s *ProductServiceOp) Update(ctx context.Context, product model.ProductInput) (output *model.Product, err error) {
-	m := mutationProductUpdate{}
-
-	vars := map[string]interface{}{
-		"input": product,
-	}
-	err = s.client.gql.Mutate(ctx, &m, vars)
-	if err != nil {
-		return
-	}
-
-	if len(m.ProductUpdateResult.UserErrors) > 0 {
-		err = fmt.Errorf("%+v", m.ProductUpdateResult.UserErrors)
-		return
-	}
-
-	return m.ProductUpdateResult.Product, nil
-}
-
-func (s *ProductServiceOp) Delete(ctx context.Context, product model.ProductDeleteInput) (deletedID *string, err error) {
-	m := mutationProductDelete{}
-
-	vars := map[string]interface{}{
-		"input": product,
-	}
-	err = s.client.gql.Mutate(ctx, &m, vars)
-	if err != nil {
-		return
-	}
-
-	if len(m.ProductDeleteResult.UserErrors) > 0 {
-		err = fmt.Errorf("%+v", m.ProductDeleteResult.UserErrors)
-		return
-	}
-
-	return m.ProductDeleteResult.DeletedProductID, nil
 }

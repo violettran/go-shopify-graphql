@@ -7,8 +7,53 @@ import (
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
 
+var productVariantQuery = `
+	id
+    product {
+		id
+	}
+	createdAt
+	updatedAt
+	legacyResourceId
+	sku
+	selectedOptions{
+		name
+		value
+	}
+	image {
+		altText
+		height
+		id
+		src
+		width
+	}
+	compareAtPrice
+	price
+	inventoryQuantity
+	barcode
+	title
+	inventoryPolicy
+	position
+	inventoryItem {
+		tracked
+	}
+	metafields{
+		edges{
+			node{
+				id
+				legacyResourceId
+				namespace
+				key
+				value
+				type
+				ownerType
+			}
+		}
+	}
+`
+
 type VariantService interface {
-	Update(ctx context.Context, variant model.ProductVariantInput) error
+	List(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error)
 }
 
 type VariantServiceOp struct {
@@ -17,28 +62,21 @@ type VariantServiceOp struct {
 
 var _ VariantService = &VariantServiceOp{}
 
-type mutationProductVariantUpdate struct {
-	ProductVariantUpdateResult productVariantUpdateResult `graphql:"productVariantUpdate(input: $input)" json:"productVariantUpdate"`
-}
-
-type productVariantUpdateResult struct {
-	UserErrors []UserErrors
-}
-
-func (s *VariantServiceOp) Update(ctx context.Context, variant model.ProductVariantInput) error {
-	m := mutationProductVariantUpdate{}
-
-	vars := map[string]interface{}{
-		"input": variant,
+func (s *VariantServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error) {
+	b := &bulkQueryBuilder{
+		operationName: "productVariants",
+		fields:        productVariantQuery,
 	}
-	err := s.client.gql.Mutate(ctx, &m, vars)
+	for _, opt := range opts {
+		opt(b)
+	}
+	q := b.Build()
+
+	res := make([]*model.ProductVariant, 0)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("bulk query: %w", err)
 	}
 
-	if len(m.ProductVariantUpdateResult.UserErrors) > 0 {
-		return fmt.Errorf("%+v", m.ProductVariantUpdateResult.UserErrors)
-	}
-
-	return nil
+	return res, nil
 }

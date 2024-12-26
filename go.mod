@@ -5,7 +5,7 @@ go 1.22.5
 require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/gempages/go-helper v1.12.2
-	github.com/gempages/go-shopify-graphql-model v1.0.0
+	github.com/gempages/go-shopify-graphql-model v1.0.1-0.20241225103921-6ddff90c3663
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
