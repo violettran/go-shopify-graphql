@@ -2,6 +2,8 @@ package shopify
 
 import "github.com/gempages/go-shopify-graphql/graphql"
 
+const DefaultQueryLimit = 250
+
 type UserErrors struct {
 	Field   []graphql.String
 	Message graphql.String

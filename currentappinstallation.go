@@ -10,6 +10,7 @@ import (
 type AppService interface {
 	GetCurrentAppInstallation(ctx context.Context) (*model.AppInstallation, error)
 	FindActiveAppSubscriptions(ctx context.Context) ([]model.AppSubscription, error)
+	ListAppSubscriptions(ctx context.Context, opts ...QueryOption) (*model.AppSubscriptionConnection, error)
 }
 
 type AppServiceOp struct {
@@ -91,4 +92,61 @@ func (a *AppServiceOp) FindActiveAppSubscriptions(ctx context.Context) ([]model.
 	}
 
 	return out.CurrentAppInstallation.ActiveSubscriptions, nil
+}
+
+var queryAppSubscriptions = fmt.Sprintf(`
+query allSubscriptions(
+    $first: Int,
+    $after: String,
+    $reverse: Boolean = false,
+    $sortKey: AppSubscriptionSortKeys = CREATED_AT
+) {
+    allSubscriptions(
+        first: $first,
+        after: $after,
+        reverse: $reverse,
+        sortKey: $sortKey
+    ) {
+        edges {
+            node {
+				__typename
+                createdAt
+                currentPeriodEnd
+                id
+                name
+                status
+				returnUrl
+				test
+				trialDays
+            }
+            cursor
+        }
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+			startCursor
+      		endCursor
+        }
+    }
+}
+`)
+
+func (a *AppServiceOp) ListAppSubscriptions(ctx context.Context, opts ...QueryOption) (*model.AppSubscriptionConnection, error) {
+	queryOpt := appServiceQueryOptionBuilder{}
+	for _, opt := range opts {
+		opt(&queryOpt)
+	}
+	vars := queryOpt.Build()
+
+	out := model.QueryRoot{}
+	err := a.client.gql.QueryString(ctx, queryAppSubscriptions, vars, &out)
+	if err != nil {
+		return nil, fmt.Errorf("gql.QueryString: %w", err)
+	}
+
+	if out.AppInstallation == nil {
+		return &model.AppSubscriptionConnection{}, nil
+	}
+
+	return out.AppInstallation.AllSubscriptions, nil
 }
